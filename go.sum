@@ -1,7 +1,5 @@
-github.com/d-darac/inventory-assets v0.0.0-20251209140349-3779479c9dd6 h1:6kwfi8GkHmQ8lMonpskHCyl+uoukXpPtLYX6ygpLZ+E=
-github.com/d-darac/inventory-assets v0.0.0-20251209140349-3779479c9dd6/go.mod h1:kIN/auHqoGCMQr6VKCLrBQJcIG9pBZsNjQ0zzcbFx44=
-github.com/d-darac/inventory-assets v0.0.0-20251209143256-9feb209530f6 h1:iZE++duJF7FybOOk+4sREZhE5qD2JU3zxMwks+i5hio=
-github.com/d-darac/inventory-assets v0.0.0-20251209143256-9feb209530f6/go.mod h1:kIN/auHqoGCMQr6VKCLrBQJcIG9pBZsNjQ0zzcbFx44=
+github.com/d-darac/inventory-assets v0.0.0-20251209182133-f93b39fe2543 h1:xgWbn3kd0TJ+02xDsLuMXwHgiEMQGVloumzRNCYAKL0=
+github.com/d-darac/inventory-assets v0.0.0-20251209182133-f93b39fe2543/go.mod h1:kIN/auHqoGCMQr6VKCLrBQJcIG9pBZsNjQ0zzcbFx44=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
