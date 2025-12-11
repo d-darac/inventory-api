@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"time"
 )
 
@@ -90,18 +91,20 @@ func (cfg *ApiConfig) CheckReqBodyLengthMw(next http.HandlerFunc) http.HandlerFu
 func (cfg *ApiConfig) ValidateJsonMw(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			if err.Error() == "EOF" {
+		if len(body) > 0 {
+			if err != nil {
+				if err.Error() == "EOF" {
+					resError(w, http.StatusBadRequest, InvalidRequestBodyMessage(), InvalidRequestError, nil, nil)
+					return
+				}
+				resError(w, http.StatusInternalServerError, ApiErrorMessage(), ApiError, nil, err)
+				return
+			}
+
+			if !json.Valid(body) {
 				resError(w, http.StatusBadRequest, InvalidRequestBodyMessage(), InvalidRequestError, nil, nil)
 				return
 			}
-			resError(w, http.StatusInternalServerError, ApiErrorMessage(), ApiError, nil, err)
-			return
-		}
-
-		if !json.Valid(body) {
-			resError(w, http.StatusBadRequest, InvalidRequestBodyMessage(), InvalidRequestError, nil, nil)
-			return
 		}
 
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
@@ -119,5 +122,63 @@ func (cfg *ApiConfig) RecoveryMw(next http.HandlerFunc) http.HandlerFunc {
 			}
 		}()
 		next.ServeHTTP(w, r)
+	}
+}
+
+func (cfg *ApiConfig) CheckRouteAndMethodMw(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		wrapped := &wrappedWriter{
+			ResponseWriter: w,
+			buf:            &bytes.Buffer{},
+			statusCode:     http.StatusOK,
+		}
+
+		next.ServeHTTP(wrapped, r)
+
+		if strings.Contains(wrapped.buf.String(), "404 page not found") {
+			errRes := struct {
+				Error ErrResponse `json:"error"`
+			}{
+				Error: ErrResponse{
+					Message: RouteUnknownMessage(r.Method, r.URL.Path),
+					Type:    InvalidRequestError,
+				},
+			}
+
+			data, err := json.MarshalIndent(errRes, "", "  ")
+			if err != nil {
+				log.Printf("error marshaling JSON: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			wrapped.buf.Reset()
+			wrapped.buf.Write(data)
+		}
+
+		if wrapped.statusCode == http.StatusMethodNotAllowed {
+			errRes := struct {
+				Error ErrResponse `json:"error"`
+			}{
+				Error: ErrResponse{
+					Message: MethodNotAllowedMessage(r.Method, r.URL.Path),
+					Type:    InvalidRequestError,
+				},
+			}
+
+			data, err := json.MarshalIndent(errRes, "", "  ")
+			if err != nil {
+				log.Printf("error marshaling JSON: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			wrapped.buf.Reset()
+			wrapped.buf.Write(data)
+		}
+
+		if _, err := io.Copy(w, wrapped.buf); err != nil {
+			log.Printf("Failed to send response: %v", err)
+		}
 	}
 }
