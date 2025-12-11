@@ -43,21 +43,24 @@ func main() {
 	apiCfg.Db = database.New(db)
 
 	router := http.NewServeMux()
-
 	apiCfg.LoadRoutes(router)
+
+	v1 := http.NewServeMux()
+	v1.Handle("/v1/", http.StripPrefix("/v1", router))
 
 	stack := api.CreateStack(
 		apiCfg.RecoveryMw,
-		apiCfg.LoggerMw,
 		apiCfg.CheckReqBodyLengthMw,
+		apiCfg.LoggerMw,
 		apiCfg.ValidateJsonMw,
+		apiCfg.CheckRouteAndMethodMw,
 	)
 
 	server := &http.Server{
-		Handler: stack(router.ServeHTTP),
+		Handler: stack(v1.ServeHTTP),
 		Addr:    fmt.Sprintf("%s:%d", apiCfg.Host, apiCfg.Port),
 	}
 
-	fmt.Printf("server listening on port: %d\n", apiCfg.Port)
+	log.Printf("server listening on port: %d", apiCfg.Port)
 	log.Fatal(server.ListenAndServe())
 }
