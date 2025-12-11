@@ -40,3 +40,11 @@ func InvalidRequestBodyMessage() string {
 func ApiErrorMessage() string {
 	return "Something went wrong."
 }
+
+func RouteUnknownMessage(method, path string) string {
+	return fmt.Sprintf("Request to unknown route (%s: %s).", method, path)
+}
+
+func MethodNotAllowedMessage(method, path string) string {
+	return fmt.Sprintf("Method '%s' not allowed on %s.", method, path)
+}
