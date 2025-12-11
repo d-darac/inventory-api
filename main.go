@@ -22,12 +22,10 @@ func main() {
 	}
 
 	apiCfg := api.ApiConfig{
-		Host:       os.Getenv("HOST"),
-		Port:       port,
-		DbURL:      os.Getenv("DB_URL"),
-		Platform:   os.Getenv("PLATFORM"),
-		JWTSecret:  os.Getenv("JWT_SECRET"),
-		MaxReqSize: 1024,
+		Host:     os.Getenv("HOST"),
+		Port:     port,
+		DbURL:    os.Getenv("DB_URL"),
+		Platform: os.Getenv("PLATFORM"),
 	}
 
 	db, err := sql.Open("postgres", apiCfg.DbURL)
@@ -48,12 +46,16 @@ func main() {
 	v1 := http.NewServeMux()
 	v1.Handle("/v1/", http.StripPrefix("/v1", router))
 
+	middleware := api.Middleware{
+		MaxReqSize: 10240,
+	}
+
 	stack := api.CreateStack(
-		apiCfg.RecoveryMw,
-		apiCfg.CheckReqBodyLengthMw,
-		apiCfg.LoggerMw,
-		apiCfg.ValidateJsonMw,
-		apiCfg.CheckRouteAndMethodMw,
+		middleware.RecoveryMw,
+		middleware.CheckReqBodyLengthMw,
+		middleware.LoggerMw,
+		middleware.ValidateJsonMw,
+		middleware.CheckRouteAndMethodMw,
 	)
 
 	server := &http.Server{
