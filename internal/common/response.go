@@ -1,4 +1,4 @@
-package api
+package common
 
 import (
 	"encoding/json"
@@ -6,29 +6,21 @@ import (
 	"net/http"
 )
 
-func resError(w http.ResponseWriter, statCode int, msg string, errType ErrorType, errCode *ErrorCode, err error) {
+func ResError(w http.ResponseWriter, statCode int, errRes interface{}, err error) {
 	if err != nil {
 		log.Println(err)
 	}
 
 	if statCode >= http.StatusInternalServerError {
-		log.Printf("responding with %d error: %s", statCode, msg)
+		log.Printf("responding with status %d", statCode)
 	}
 
-	errRes := ErrResponse{
-		Message: msg,
-		Type:    errType,
-	}
-	if errCode != nil {
-		errRes.Code = *errCode
-	}
-
-	resJSON(w, statCode, struct {
-		Error ErrResponse `json:"error"`
+	ResJSON(w, statCode, struct {
+		Error interface{} `json:"error"`
 	}{Error: errRes})
 }
 
-func resJSON(w http.ResponseWriter, statCode int, payload interface{}) {
+func ResJSON(w http.ResponseWriter, statCode int, payload interface{}) {
 	setDefaultHeaders(w)
 	data, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {

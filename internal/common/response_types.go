@@ -1,4 +1,4 @@
-package api
+package common
 
 import (
 	"time"
@@ -25,4 +25,15 @@ type AccountResponse struct {
 	UpdatedAt time.Time        `json:"updated_at"`
 	Country   database.Country `json:"country"`
 	Nickname  string           `json:"nickname"`
+}
+
+func NewErrorResponse(msg string, errType ErrorType, errCode *ErrorCode) *ErrResponse {
+	errRes := ErrResponse{
+		Message: msg,
+		Type:    errType,
+	}
+	if errCode != nil {
+		errRes.Code = *errCode
+	}
+	return &errRes
 }
