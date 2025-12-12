@@ -9,6 +9,8 @@ import (
 	"strconv"
 
 	"github.com/d-darac/inventory-api/internal/api"
+	"github.com/d-darac/inventory-api/internal/middleware"
+	"github.com/d-darac/inventory-api/internal/router"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -40,17 +42,17 @@ func main() {
 
 	apiCfg.Db = database.New(db)
 
-	router := http.NewServeMux()
-	apiCfg.LoadRoutes(router)
+	mux := http.NewServeMux()
+	router.LoadRoutes(mux, &apiCfg)
 
 	v1 := http.NewServeMux()
-	v1.Handle("/v1/", http.StripPrefix("/v1", router))
+	v1.Handle("/v1/", http.StripPrefix("/v1", mux))
 
-	middleware := api.Middleware{
+	middleware := middleware.Middleware{
 		MaxReqSize: 10240,
 	}
 
-	stack := api.CreateStack(
+	stack := middleware.CreateStack(
 		middleware.RecoveryMw,
 		middleware.CheckReqBodyLengthMw,
 		middleware.LoggerMw,

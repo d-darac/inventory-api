@@ -1,4 +1,4 @@
-package api
+package middleware
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/d-darac/inventory-api/internal/api"
 	"github.com/d-darac/inventory-api/internal/common"
 )
 
@@ -25,7 +26,7 @@ type wrappedWriter struct {
 	statusCode int
 }
 
-func CreateStack(xs ...MiddlewareFuncs) MiddlewareFuncs {
+func (mw *Middleware) CreateStack(xs ...MiddlewareFuncs) MiddlewareFuncs {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		for i := len(xs) - 1; i >= 0; i-- {
 			x := xs[i]
@@ -44,14 +45,13 @@ func (w *wrappedWriter) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
 }
 
-func (cfg *Middleware) LoggerMw(next http.HandlerFunc) http.HandlerFunc {
+func (mw *Middleware) LoggerMw(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			errRes := common.NewErrorResponse(common.ApiErrorMessage(), common.ApiError, nil)
-			common.ResError(w, http.StatusInternalServerError, errRes, err)
+			api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, err)
 			return
 		}
 
@@ -78,18 +78,16 @@ func (cfg *Middleware) LoggerMw(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func (cfg *Middleware) CheckReqBodyLengthMw(next http.HandlerFunc) http.HandlerFunc {
+func (mw *Middleware) CheckReqBodyLengthMw(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Body = http.MaxBytesReader(w, r.Body, int64(cfg.MaxReqSize))
+		r.Body = http.MaxBytesReader(w, r.Body, int64(mw.MaxReqSize))
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			if err.Error() == "http: request body too large" {
-				errRes := common.NewErrorResponse("Request body too large", common.InvalidRequestError, nil)
-				common.ResError(w, http.StatusBadRequest, errRes, err)
+				api.ResError(w, http.StatusBadRequest, common.RequestTooLargeMessage(), common.InvalidRequestError, nil, err)
 				return
 			}
-			errRes := common.NewErrorResponse(common.ApiErrorMessage(), common.ApiError, nil)
-			common.ResError(w, http.StatusInternalServerError, errRes, err)
+			api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, err)
 			return
 		}
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
@@ -97,19 +95,17 @@ func (cfg *Middleware) CheckReqBodyLengthMw(next http.HandlerFunc) http.HandlerF
 	})
 }
 
-func (cfg *Middleware) ValidateJsonMw(next http.HandlerFunc) http.HandlerFunc {
+func (mw *Middleware) ValidateJsonMw(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if len(body) > 0 {
 			if err != nil {
-				errRes := common.NewErrorResponse(common.ApiErrorMessage(), common.ApiError, nil)
-				common.ResError(w, http.StatusInternalServerError, errRes, err)
+				api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, err)
 				return
 			}
 
 			if !json.Valid(body) {
-				errRes := common.NewErrorResponse(common.InvalidRequestBodyMessage(), common.InvalidRequestError, nil)
-				common.ResError(w, http.StatusBadRequest, errRes, nil)
+				api.ResError(w, http.StatusBadRequest, common.InvalidRequestBodyMessage(), common.InvalidRequestError, nil, nil)
 				return
 			}
 		}
@@ -119,20 +115,20 @@ func (cfg *Middleware) ValidateJsonMw(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func (cfg *Middleware) RecoveryMw(next http.HandlerFunc) http.HandlerFunc {
+func (mw *Middleware) RecoveryMw(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("Caught panic: %v\nStack trace:\n%s", err, string(debug.Stack()))
-				errRes := common.NewErrorResponse(common.ApiErrorMessage(), common.ApiError, nil)
-				common.ResError(w, http.StatusInternalServerError, errRes, nil)
+				api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, nil)
+				return
 			}
 		}()
 		next.ServeHTTP(w, r)
 	}
 }
 
-func (cfg *Middleware) CheckRouteAndMethodMw(next http.HandlerFunc) http.HandlerFunc {
+func (mw *Middleware) CheckRouteAndMethodMw(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		wrapped := &wrappedWriter{
 			ResponseWriter: w,
@@ -143,14 +139,13 @@ func (cfg *Middleware) CheckRouteAndMethodMw(next http.HandlerFunc) http.Handler
 		next.ServeHTTP(wrapped, r)
 
 		if strings.Contains(wrapped.buf.String(), "404 page not found") {
-			errRes := common.NewErrorResponse(
-				common.RouteUnknownMessage(r.Method, r.URL.Path),
-				common.InvalidRequestError,
-				nil,
-			)
+			errRes := &api.ErrResponse{
+				Message: common.RouteUnknownMessage(r.Method, r.URL.Path),
+				Type:    common.InvalidRequestError,
+			}
 
 			res := struct {
-				Error *common.ErrResponse `json:"error"`
+				Error *api.ErrResponse `json:"error"`
 			}{
 				Error: errRes,
 			}
@@ -167,13 +162,13 @@ func (cfg *Middleware) CheckRouteAndMethodMw(next http.HandlerFunc) http.Handler
 		}
 
 		if wrapped.statusCode == http.StatusMethodNotAllowed {
-			errRes := common.NewErrorResponse(
-				common.MethodNotAllowedMessage(r.Method, r.URL.Path),
-				common.InvalidRequestError,
-				nil,
-			)
+			errRes := &api.ErrResponse{
+				Message: common.MethodNotAllowedMessage(r.Method, r.URL.Path),
+				Type:    common.InvalidRequestError,
+			}
+
 			res := struct {
-				Error *common.ErrResponse `json:"error"`
+				Error *api.ErrResponse `json:"error"`
 			}{
 				Error: errRes,
 			}
