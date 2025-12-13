@@ -1,20 +1,19 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/d-darac/inventory-api/internal/common"
+	"github.com/d-darac/inventory-api/internal/str"
 	"github.com/google/uuid"
 )
 
-type ErrResponse struct {
-	Code    common.ErrorCode `json:"code,omitempty"`
-	Message string           `json:"message"`
-	Type    common.ErrorType `json:"type"`
+type ErrorResponse struct {
+	Code    ErrorCode `json:"code,omitempty"`
+	Message string    `json:"message"`
+	Type    ErrorType `json:"type"`
 }
 
 type ListResponse struct {
@@ -27,7 +26,7 @@ type GroupResponse struct {
 	ID          uuid.UUID      `json:"id"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
-	Description sql.NullString `json:"description"`
+	Description str.NullString `json:"description"`
 	Name        string         `json:"name"`
 	ParentGroup uuid.NullUUID  `json:"parent_group"`
 }
@@ -36,8 +35,8 @@ func ResError(
 	w http.ResponseWriter,
 	statCode int,
 	msg string,
-	errType common.ErrorType,
-	errCode *common.ErrorCode,
+	errType ErrorType,
+	errCode *ErrorCode,
 	err error,
 ) {
 	if err != nil {
@@ -46,7 +45,7 @@ func ResError(
 	if statCode >= http.StatusInternalServerError {
 		log.Printf("responding with status %d", statCode)
 	}
-	errRes := ErrResponse{
+	errRes := ErrorResponse{
 		Message: msg,
 		Type:    errType,
 	}
