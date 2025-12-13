@@ -1,5 +1,5 @@
-github.com/d-darac/inventory-assets v1.2.0 h1:gmDDDsYhQxWsnIxC7YWWO1v3sTg3UJSOOQ/WCP+EJC4=
-github.com/d-darac/inventory-assets v1.2.0/go.mod h1:9TTSXs2AIOJ9zh6QgWlkLx3j3ktzoh2oLvP6j2j3Iwk=
+github.com/d-darac/inventory-assets v1.0.0 h1:fpxDr2ZbswmsExKfMSljCUkmgRN5t+wn1C/++Hmb0JQ=
+github.com/d-darac/inventory-assets v1.0.0/go.mod h1:kIN/auHqoGCMQr6VKCLrBQJcIG9pBZsNjQ0zzcbFx44=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
