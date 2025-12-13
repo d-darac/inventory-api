@@ -50,6 +50,14 @@ func main() {
 
 	middleware := middleware.Middleware{
 		MaxReqSize: 10240,
+		Db:         apiCfg.Db,
+		Auth: struct {
+			MasterKey string
+			Iv        string
+		}{
+			MasterKey: os.Getenv("MASTER_KEY"),
+			Iv:        os.Getenv("IV"),
+		},
 	}
 
 	stack := middleware.CreateStack(
@@ -58,6 +66,7 @@ func main() {
 		middleware.LoggerMw,
 		middleware.ValidateJsonMw,
 		middleware.CheckRouteAndMethodMw,
+		middleware.ApiKeyAuthMw,
 	)
 
 	server := &http.Server{
