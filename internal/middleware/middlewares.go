@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/d-darac/inventory-api/internal/api"
-	"github.com/d-darac/inventory-api/internal/common"
 	"github.com/d-darac/inventory-assets/auth"
 	"github.com/d-darac/inventory-assets/database"
 	"golang.org/x/text/cases"
@@ -67,7 +66,7 @@ func (mw *Middleware) LoggerMw(next http.HandlerFunc) http.HandlerFunc {
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, err)
+			api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 			return
 		}
 
@@ -100,10 +99,10 @@ func (mw *Middleware) CheckReqBodyLengthMw(next http.HandlerFunc) http.HandlerFu
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			if err.Error() == "http: request body too large" {
-				api.ResError(w, http.StatusBadRequest, common.RequestTooLargeMessage(), common.InvalidRequestError, nil, err)
+				api.ResError(w, http.StatusBadRequest, api.RequestTooLargeMessage(), api.InvalidRequestError, nil, err)
 				return
 			}
-			api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, err)
+			api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 			return
 		}
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
@@ -116,12 +115,12 @@ func (mw *Middleware) ValidateJsonMw(next http.HandlerFunc) http.HandlerFunc {
 		body, err := io.ReadAll(r.Body)
 		if len(body) > 0 {
 			if err != nil {
-				api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, err)
+				api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 				return
 			}
 
 			if !json.Valid(body) {
-				api.ResError(w, http.StatusBadRequest, common.InvalidRequestBodyMessage(), common.InvalidRequestError, nil, nil)
+				api.ResError(w, http.StatusBadRequest, api.InvalidRequestBodyMessage(), api.InvalidRequestError, nil, nil)
 				return
 			}
 		}
@@ -136,7 +135,7 @@ func (mw *Middleware) RecoveryMw(next http.HandlerFunc) http.HandlerFunc {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("Caught panic: %v\nStack trace:\n%s", err, string(debug.Stack()))
-				api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, nil)
+				api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, nil)
 				return
 			}
 		}()
@@ -151,7 +150,7 @@ func (mw *Middleware) CheckRouteAndMethodMw(next http.HandlerFunc) http.HandlerF
 			`^\/v1\/groups\/[^\/]+$`: {"DELETE", "GET", "PUT"},
 		}
 		if statusCode, err := validateRoute(r.Method, r.URL.Path, pathsMethods); err != nil {
-			api.ResError(w, statusCode, err.Error(), common.InvalidRequestError, nil, nil)
+			api.ResError(w, statusCode, err.Error(), api.InvalidRequestError, nil, nil)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -163,24 +162,24 @@ func (mw *Middleware) ApiKeyAuthMw(next http.HandlerFunc) http.HandlerFunc {
 		apiKeyString, err := auth.GetApiKey(r.Header)
 		if err != nil {
 			msg := cases.Title(language.English).String(err.Error()) + "."
-			api.ResError(w, http.StatusUnauthorized, msg, common.InvalidRequestError, nil, nil)
+			api.ResError(w, http.StatusUnauthorized, msg, api.InvalidRequestError, nil, nil)
 			return
 		}
 
 		secret, err := auth.EncryptApiKeySecret(apiKeyString, mw.Auth.MasterKey, mw.Auth.Iv)
 		if err != nil {
-			api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, err)
+			api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 			return
 		}
 
 		apiKey, err := mw.Db.GetApiKeyAccAndExp(context.Background(), secret)
 		if err != nil {
-			api.ResError(w, http.StatusNotFound, "Invalid api key.", common.InvalidRequestError, nil, nil)
+			api.ResError(w, http.StatusNotFound, "Invalid api key.", api.InvalidRequestError, nil, nil)
 			return
 		}
 
 		if apiKey.ExpiresAt.Valid && time.Now().After(apiKey.ExpiresAt.Time) {
-			api.ResError(w, http.StatusBadRequest, "Api key expired.", common.InvalidRequestError, nil, nil)
+			api.ResError(w, http.StatusBadRequest, "Api key expired.", api.InvalidRequestError, nil, nil)
 			return
 		}
 
@@ -202,11 +201,11 @@ func validateRoute(reqMethod, reqPath string, pathsMethods map[string][]string) 
 		}
 	}
 	if len(methods) == 0 {
-		return http.StatusNotFound, errors.New(common.RouteUnknownMessage(reqMethod, reqPath))
+		return http.StatusNotFound, errors.New(api.RouteUnknownMessage(reqMethod, reqPath))
 	}
 
 	if !slices.Contains(methods, reqMethod) {
-		return http.StatusMethodNotAllowed, errors.New(common.MethodNotAllowedMessage(reqMethod, reqPath))
+		return http.StatusMethodNotAllowed, errors.New(api.MethodNotAllowedMessage(reqMethod, reqPath))
 	}
 	return 0, nil
 }
