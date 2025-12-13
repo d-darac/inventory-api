@@ -2,20 +2,36 @@ package middleware
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"runtime/debug"
-	"strings"
+	"slices"
 	"time"
 
 	"github.com/d-darac/inventory-api/internal/api"
 	"github.com/d-darac/inventory-api/internal/common"
+	"github.com/d-darac/inventory-assets/auth"
+	"github.com/d-darac/inventory-assets/database"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
+
+type ctxKey string
+
+var AuthAccountID ctxKey = "middleware.auth.accountID"
 
 type Middleware struct {
 	MaxReqSize int
+	Db         *database.Queries
+	Auth       struct {
+		MasterKey string
+		Iv        string
+	}
 }
 
 type MiddlewareFuncs func(http.HandlerFunc) http.HandlerFunc
@@ -130,62 +146,67 @@ func (mw *Middleware) RecoveryMw(next http.HandlerFunc) http.HandlerFunc {
 
 func (mw *Middleware) CheckRouteAndMethodMw(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wrapped := &wrappedWriter{
-			ResponseWriter: w,
-			buf:            &bytes.Buffer{},
-			statusCode:     http.StatusOK,
+		pathsMethods := map[string][]string{
+			`^\/v1\/groups$`:         {"GET", "POST"},
+			`^\/v1\/groups\/[^\/]+$`: {"DELETE", "GET", "PUT"},
+		}
+		if statusCode, err := validateRoute(r.Method, r.URL.Path, pathsMethods); err != nil {
+			api.ResError(w, statusCode, err.Error(), common.InvalidRequestError, nil, nil)
+			return
+		}
+		next.ServeHTTP(w, r)
+	}
+}
+
+func (mw *Middleware) ApiKeyAuthMw(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		apiKeyString, err := auth.GetApiKey(r.Header)
+		if err != nil {
+			msg := cases.Title(language.English).String(err.Error()) + "."
+			api.ResError(w, http.StatusUnauthorized, msg, common.InvalidRequestError, nil, nil)
+			return
 		}
 
-		next.ServeHTTP(wrapped, r)
-
-		if strings.Contains(wrapped.buf.String(), "404 page not found") {
-			errRes := &api.ErrResponse{
-				Message: common.RouteUnknownMessage(r.Method, r.URL.Path),
-				Type:    common.InvalidRequestError,
-			}
-
-			res := struct {
-				Error *api.ErrResponse `json:"error"`
-			}{
-				Error: errRes,
-			}
-
-			data, err := json.MarshalIndent(res, "", "  ")
-			if err != nil {
-				log.Printf("error marshaling JSON: %v", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			wrapped.buf.Reset()
-			wrapped.buf.Write(data)
+		secret, err := auth.EncryptApiKeySecret(apiKeyString, mw.Auth.MasterKey, mw.Auth.Iv)
+		if err != nil {
+			api.ResError(w, http.StatusInternalServerError, common.ApiErrorMessage(), common.ApiError, nil, err)
+			return
 		}
 
-		if wrapped.statusCode == http.StatusMethodNotAllowed {
-			errRes := &api.ErrResponse{
-				Message: common.MethodNotAllowedMessage(r.Method, r.URL.Path),
-				Type:    common.InvalidRequestError,
-			}
-
-			res := struct {
-				Error *api.ErrResponse `json:"error"`
-			}{
-				Error: errRes,
-			}
-
-			data, err := json.MarshalIndent(res, "", "  ")
-			if err != nil {
-				log.Printf("error marshaling JSON: %v", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			wrapped.buf.Reset()
-			wrapped.buf.Write(data)
+		apiKey, err := mw.Db.GetApiKeyAccAndExp(context.Background(), secret)
+		if err != nil {
+			api.ResError(w, http.StatusNotFound, "Invalid api key.", common.InvalidRequestError, nil, nil)
+			return
 		}
 
-		if _, err := io.Copy(w, wrapped.buf); err != nil {
-			log.Printf("Failed to send response: %v", err)
+		if apiKey.ExpiresAt.Valid && time.Now().After(apiKey.ExpiresAt.Time) {
+			api.ResError(w, http.StatusBadRequest, "Api key expired.", common.InvalidRequestError, nil, nil)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), AuthAccountID, apiKey.Account)
+		req := r.WithContext(ctx)
+
+		next.ServeHTTP(w, req)
+	}
+}
+
+func validateRoute(reqMethod, reqPath string, pathsMethods map[string][]string) (int, error) {
+	methods := []string{}
+	for kPath, vMethods := range pathsMethods {
+		r := regexp.MustCompile(kPath)
+		matched := r.MatchString(reqPath)
+		if matched {
+			methods = vMethods
+			break
 		}
 	}
+	if len(methods) == 0 {
+		return http.StatusNotFound, errors.New(common.RouteUnknownMessage(reqMethod, reqPath))
+	}
+
+	if !slices.Contains(methods, reqMethod) {
+		return http.StatusMethodNotAllowed, errors.New(common.MethodNotAllowedMessage(reqMethod, reqPath))
+	}
+	return 0, nil
 }
