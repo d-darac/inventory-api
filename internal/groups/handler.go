@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/d-darac/inventory-api/internal/api"
-	"github.com/d-darac/inventory-api/internal/str"
 	"github.com/d-darac/inventory-assets/database"
+	"github.com/d-darac/inventory-assets/str"
 	"github.com/google/uuid"
 )
 

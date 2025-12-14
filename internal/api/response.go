@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/d-darac/inventory-api/internal/str"
+	"github.com/d-darac/inventory-assets/str"
 	"github.com/google/uuid"
 )
 
