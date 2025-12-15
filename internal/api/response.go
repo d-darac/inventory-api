@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
-
-	"github.com/d-darac/inventory-assets/str"
-	"github.com/google/uuid"
 )
 
 type ErrorResponse struct {
 	Code    ErrorCode `json:"code,omitempty"`
 	Message string    `json:"message"`
+	Param   string    `json:"param,omitempty"`
 	Type    ErrorType `json:"type"`
+}
+
+type ErrorListResponse struct {
+	Errors []ErrorResponse `json:"errors"`
 }
 
 type ListResponse struct {
@@ -22,13 +23,26 @@ type ListResponse struct {
 	Url     string        `json:"url"`
 }
 
-type GroupResponse struct {
-	ID          uuid.UUID      `json:"id"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	Description str.NullString `json:"description"`
-	Name        string         `json:"name"`
-	ParentGroup uuid.NullUUID  `json:"parent_group"`
+func (e ErrorResponse) ResError(w http.ResponseWriter, statCode int, err error) {
+	if err != nil {
+		log.Println(err)
+	}
+	if statCode >= http.StatusInternalServerError {
+		log.Printf("responding with status %d", statCode)
+	}
+	ResJSON(w, statCode, struct {
+		Error ErrorResponse `json:"error"`
+	}{Error: e})
+}
+
+func (e ErrorListResponse) ResError(w http.ResponseWriter, statCode int, err error) {
+	if err != nil {
+		log.Println(err)
+	}
+	if statCode >= http.StatusInternalServerError {
+		log.Printf("responding with status %d", statCode)
+	}
+	ResJSON(w, statCode, e)
 }
 
 func ResError(
@@ -53,7 +67,7 @@ func ResError(
 		errRes.Code = *errCode
 	}
 	ResJSON(w, statCode, struct {
-		Error interface{} `json:"error"`
+		Error ErrorResponse `json:"error"`
 	}{Error: errRes})
 }
 
