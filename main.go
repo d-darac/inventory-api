@@ -64,7 +64,6 @@ func main() {
 		middleware.RecoveryMw,
 		middleware.CheckReqBodyLengthMw,
 		middleware.LoggerMw,
-		middleware.ValidateJsonMw,
 		middleware.CheckRouteAndMethodMw,
 		middleware.ApiKeyAuthMw,
 	)

@@ -3,7 +3,6 @@ package middleware
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -105,26 +104,6 @@ func (mw *Middleware) CheckReqBodyLengthMw(next http.HandlerFunc) http.HandlerFu
 			api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 			return
 		}
-		r.Body = io.NopCloser(bytes.NewBuffer(body))
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (mw *Middleware) ValidateJsonMw(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		if len(body) > 0 {
-			if err != nil {
-				api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
-				return
-			}
-
-			if !json.Valid(body) {
-				api.ResError(w, http.StatusBadRequest, api.InvalidRequestBodyMessage(), api.InvalidRequestError, nil, nil)
-				return
-			}
-		}
-
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
 		next.ServeHTTP(w, r)
 	})
