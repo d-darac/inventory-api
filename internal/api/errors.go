@@ -18,15 +18,21 @@ const (
 type ErrorCode string
 
 const (
-	ApiKeyExpired    ErrorCode = "api_key_expired"
-	CountryUnknown   ErrorCode = "country_unknown"
-	CurrencyUnknown  ErrorCode = "currency_unknown"
-	ParameterInvalid ErrorCode = "parameter_invalid"
-	ResourceNotFound ErrorCode = "resource_not_found"
+	ApiKeyExpired          ErrorCode = "api_key_expired"
+	CharacterLimitExceeded ErrorCode = "character_limit_exceeded"
+	CountryUnknown         ErrorCode = "country_unknown"
+	CurrencyUnknown        ErrorCode = "currency_unknown"
+	ParameterInvalid       ErrorCode = "parameter_invalid"
+	ParameterMissing       ErrorCode = "parameter_missing"
+	ResourceNotFound       ErrorCode = "resource_not_found"
 )
 
 func ApiErrorMessage() string {
 	return "Something went wrong."
+}
+
+func CharacterLimitExceededMessage(param, limit string) string {
+	return fmt.Sprintf("The length of the '%s' parameter cannot be greater than %s characters.", param, limit)
 }
 
 func CountryUnknownMessage(input string) string {
@@ -49,8 +55,8 @@ func InvalidIdMessage(value, resource string) string {
 	return fmt.Sprintf("Provided value '%s' is not a valid %s id.", value, resource)
 }
 
-func InvalidRequestBodyMessage() string {
-	return "Invalid request body. Make sure that the body is in format application/json."
+func InvalidRequestBodyMessage(e error) string {
+	return fmt.Sprintf("Invalid request body JSON: %s.", e.Error())
 }
 
 func MethodNotAllowedMessage(method, path string) string {
@@ -59,6 +65,14 @@ func MethodNotAllowedMessage(method, path string) string {
 
 func NotFoundMessage(id uuid.UUID, resource string) string {
 	return fmt.Sprintf("%s with id '%s' not found.", cases.Title(language.English).String(resource), id)
+}
+
+func ParameterInvalidMessage(param string) string {
+	return fmt.Sprintf("Parameter invalid: '%s'.", param)
+}
+
+func ParameterMissingMessage(param string) string {
+	return fmt.Sprintf("Missing required param: '%s'.", param)
 }
 
 func RequestTooLargeMessage() string {
