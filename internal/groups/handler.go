@@ -84,6 +84,17 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		Data: []interface{}{},
 		Url:  r.URL.Path,
 	}
+	lp := &listParams{}
+
+	if errRes := api.JsonDecode(r, lp, w); errRes != nil {
+		errRes.ResError(w, http.StatusBadRequest, nil)
+		return
+	}
+
+	if errListRes := validateListParams(lp); errListRes != nil {
+		errListRes.ResError(w, http.StatusBadRequest, nil)
+		return
+	}
 
 	groups, err := h.Db.ListGroups(context.Background(), database.ListGroupsParams{
 		AccountID: accountId,
