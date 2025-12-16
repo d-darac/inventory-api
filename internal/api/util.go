@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func GetIdFromPath(r *http.Request) (uuid.UUID, string) {
+func GetIdFromPath(r *http.Request) (id uuid.UUID, errorMessage string) {
 	pathValue := r.PathValue("id")
 	id, err := uuid.Parse(pathValue)
 	if err != nil {
@@ -64,3 +65,12 @@ func ToSnakeCase(input string) string {
 }
 
 func nextRune(s string) rune { r, _ := utf8.DecodeRuneInString(s); return r }
+
+func HandleSqlErrNoRows(err error, w http.ResponseWriter, notFoundMsg string) {
+	if err == sql.ErrNoRows {
+		errCode := ResourceNotFound
+		ResError(w, http.StatusNotFound, notFoundMsg, InvalidRequestError, &errCode, err)
+		return
+	}
+	ResError(w, http.StatusInternalServerError, ApiErrorMessage(), ApiError, nil, err)
+}
