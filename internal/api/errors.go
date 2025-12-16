@@ -18,21 +18,18 @@ const (
 type ErrorCode string
 
 const (
-	ApiKeyExpired          ErrorCode = "api_key_expired"
-	CharacterLimitExceeded ErrorCode = "character_limit_exceeded"
-	CountryUnknown         ErrorCode = "country_unknown"
-	CurrencyUnknown        ErrorCode = "currency_unknown"
-	ParameterInvalid       ErrorCode = "parameter_invalid"
-	ParameterMissing       ErrorCode = "parameter_missing"
-	ResourceNotFound       ErrorCode = "resource_not_found"
+	ApiKeyExpired        ErrorCode = "api_key_expired"
+	CountryUnknown       ErrorCode = "country_unknown"
+	CurrencyUnknown      ErrorCode = "currency_unknown"
+	ParameterInvalid     ErrorCode = "parameter_invalid"
+	ParameterMissing     ErrorCode = "parameter_missing"
+	ResourceNotFound     ErrorCode = "resource_not_found"
+	StringLengthExceeded ErrorCode = "string_length_exceeded"
+	StringLengthNotMet   ErrorCode = "string_length_not_met"
 )
 
 func ApiErrorMessage() string {
 	return "Something went wrong."
-}
-
-func CharacterLimitExceededMessage(param, limit string) string {
-	return fmt.Sprintf("The length of the '%s' parameter cannot be greater than %s characters.", param, limit)
 }
 
 func CountryUnknownMessage(input string) string {
@@ -51,12 +48,16 @@ func CurrencyUnknownMessage(input string) string {
 	)
 }
 
+func ExclusiveParamsMessage(a, b string) string {
+	return fmt.Sprintf("Received both '%s' and '%s' parameters. Pass one at a time.", a, b)
+}
+
 func InvalidIdMessage(value, resource string) string {
 	return fmt.Sprintf("Provided value '%s' is not a valid %s id.", value, resource)
 }
 
 func InvalidRequestBodyMessage(e error) string {
-	return fmt.Sprintf("Invalid request body JSON: %s.", e.Error())
+	return fmt.Sprintf("Invalid request body: %s.", e.Error())
 }
 
 func MethodNotAllowedMessage(method, path string) string {
@@ -81,4 +82,28 @@ func RequestTooLargeMessage() string {
 
 func RouteUnknownMessage(method, path string) string {
 	return fmt.Sprintf("Request to unknown route (%s: %s).", method, path)
+}
+
+func StringLengthExceededMessage(param, v string) string {
+	return fmt.Sprintf("The length of the '%s' parameter cannot be greater than %s characters.", param, v)
+}
+
+func StringLengthNotMetMessage(param, v string) string {
+	return fmt.Sprintf("The length of the '%s' parameter must be at least %s characters.", param, v)
+}
+
+func ValueNotGtMessage(param, v string) string {
+	return fmt.Sprintf("Value of '%s' param must be greater than '%s'.", param, v)
+}
+
+func ValueNotGteMessage(param, v string) string {
+	return fmt.Sprintf("Value of '%s' param must be greater than or equal to '%s'.", param, v)
+}
+
+func ValueNotLtMessage(param, v string) string {
+	return fmt.Sprintf("Value of '%s' param must be less than '%s'.", param, v)
+}
+
+func ValueNotLteMessage(param, v string) string {
+	return fmt.Sprintf("Value of '%s' param must be less than or equal to '%s'.", param, v)
 }
