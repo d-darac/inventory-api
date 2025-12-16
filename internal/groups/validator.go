@@ -15,7 +15,13 @@ func validateCreateParams(params *createParams) *api.ErrorListResponse {
 	return validateStruct(params)
 }
 
-func validateStruct(params *createParams) *api.ErrorListResponse {
+func validateListParams(params *listParams) *api.ErrorListResponse {
+	validate = validator.New(validator.WithRequiredStructEnabled())
+
+	return validateStruct(params)
+}
+
+func validateStruct(params interface{}) *api.ErrorListResponse {
 	err := validate.Struct(params)
 	if err != nil {
 		var errListRes api.ErrorListResponse
@@ -45,6 +51,9 @@ func fieldErrToErrRes(e validator.FieldError) api.ErrorResponse {
 	case "lte":
 		errRes.Code = api.CharacterLimitExceeded
 		errRes.Message = api.CharacterLimitExceededMessage(errRes.Param, e.Param())
+	default:
+		errRes.Code = api.ParameterInvalid
+		errRes.Message = api.ParameterInvalidMessage(errRes.Param)
 	}
 	return errRes
 }
