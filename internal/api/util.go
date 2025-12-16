@@ -23,14 +23,17 @@ func GetIdFromPath(r *http.Request) (id uuid.UUID, errorMessage string) {
 
 func JsonDecode(r *http.Request, v any, w http.ResponseWriter) *ErrorResponse {
 	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(v); err != nil {
-		if ute, ok := err.(*json.UnmarshalTypeError); ok {
-			errRes := formErrResponse(ute)
-			return errRes
-		}
-		return &ErrorResponse{
-			Message: InvalidRequestBodyMessage(err),
-			Type:    InvalidRequestError,
+	decoder.DisallowUnknownFields()
+	if r.ContentLength > 0 {
+		if err := decoder.Decode(v); err != nil {
+			if ute, ok := err.(*json.UnmarshalTypeError); ok {
+				errRes := formErrResponse(ute)
+				return errRes
+			}
+			return &ErrorResponse{
+				Message: InvalidRequestBodyMessage(err),
+				Type:    InvalidRequestError,
+			}
 		}
 	}
 	return nil
