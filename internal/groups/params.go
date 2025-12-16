@@ -7,7 +7,7 @@ import (
 )
 
 type createParams struct {
-	Description *string    `json:"description" validate:"lte=1024"`
+	Description *string    `json:"description" validate:"omitnil,lte=1024"`
 	Name        string     `json:"name" validate:"required,lte=64"`
 	ParentGroup *uuid.UUID `json:"parent_group"`
 }
@@ -26,9 +26,9 @@ type listParams struct {
 		Lte *time.Time `json:"lte"`
 	} `json:"updated_at"`
 	StartingAfter *uuid.UUID `json:"starting_after" validate:"excluded_with=EndingBefore"`
-	EndingBefore  *uuid.UUID `json:"ending_before" validate:"excluded_with=StartingAfter"`
+	EndingBefore  *uuid.UUID `json:"ending_before"`
 	ParentGroup   *uuid.UUID `json:"parent_group"`
-	Description   *string    `json:"description" validate:"lte=1024"`
-	Name          *string    `json:"name" validate:"lte=64"`
-	Limit         *int       `json:"limit" validate:"gt=0,lte=100"`
+	Description   *string    `json:"description" validate:"omitnil,lte=1024"`
+	Name          *string    `json:"name" validate:"omitnil,lte=64"`
+	Limit         *int       `json:"limit" validate:"omitnil,gt=0,lte=100"`
 }
