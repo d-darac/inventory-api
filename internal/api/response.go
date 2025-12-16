@@ -80,7 +80,9 @@ func ResJSON(w http.ResponseWriter, statCode int, payload interface{}) {
 		return
 	}
 	w.WriteHeader(statCode)
-	w.Write([]byte(data))
+	if statCode != http.StatusNoContent {
+		w.Write([]byte(data))
+	}
 }
 
 func setDefaultHeaders(w http.ResponseWriter) {
