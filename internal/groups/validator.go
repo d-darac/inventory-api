@@ -37,22 +37,47 @@ func validateStruct(params interface{}) *api.ErrorListResponse {
 }
 
 func fieldErrToErrRes(e validator.FieldError) api.ErrorResponse {
-	param := api.ToSnakeCase(e.StructField())
+	param := e.StructField()
+	paramType := e.Type().String()
 	errRes := api.ErrorResponse{
+		Code:    api.ParameterInvalid,
 		Message: api.ParameterInvalidMessage(param),
 		Type:    api.InvalidRequestError,
 		Param:   api.ToSnakeCase(param),
 	}
 
 	switch e.ActualTag() {
+	case "excluded_with":
+		errRes.Message = api.ExclusiveParamsMessage(errRes.Param, api.ToSnakeCase(e.Param()))
+		errRes.Param = ""
+	case "gt":
+		if paramType == "string" {
+			errRes.Code = api.StringLengthExceeded
+			errRes.Message = api.StringLengthNotMetMessage(errRes.Param, e.Param())
+		}
+		errRes.Message = api.ValueNotGtMessage(errRes.Param, e.Param())
+	case "gte":
+		if paramType == "string" {
+			errRes.Code = api.StringLengthExceeded
+			errRes.Message = api.StringLengthNotMetMessage(errRes.Param, e.Param())
+		}
+		errRes.Message = api.ValueNotGteMessage(errRes.Param, e.Param())
+	case "lt":
+		if paramType == "string" {
+			errRes.Code = api.StringLengthExceeded
+			errRes.Message = api.StringLengthExceededMessage(errRes.Param, e.Param())
+		}
+		errRes.Message = api.ValueNotLtMessage(errRes.Param, e.Param())
+	case "lte":
+		if paramType == "string" {
+			errRes.Code = api.StringLengthExceeded
+			errRes.Message = api.StringLengthExceededMessage(errRes.Param, e.Param())
+		}
+		errRes.Message = api.ValueNotLteMessage(errRes.Param, e.Param())
 	case "required":
 		errRes.Code = api.ParameterMissing
 		errRes.Message = api.ParameterMissingMessage(errRes.Param)
-	case "lte":
-		errRes.Code = api.CharacterLimitExceeded
-		errRes.Message = api.CharacterLimitExceededMessage(errRes.Param, e.Param())
 	default:
-		errRes.Code = api.ParameterInvalid
 		errRes.Message = api.ParameterInvalidMessage(errRes.Param)
 	}
 	return errRes
