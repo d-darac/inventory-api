@@ -23,6 +23,13 @@ type ListResponse struct {
 	Url     string        `json:"url"`
 }
 
+func NewListResponse(r *http.Request) *ListResponse {
+	return &ListResponse{
+		Data: make([]interface{}, 0),
+		Url:  "/v1" + r.URL.Path,
+	}
+}
+
 func (e ErrorResponse) ResError(w http.ResponseWriter, statCode int, err error) {
 	if err != nil {
 		log.Println(err)
