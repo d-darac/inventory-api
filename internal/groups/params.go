@@ -1,8 +1,7 @@
 package groups
 
 import (
-	"time"
-
+	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
@@ -13,22 +12,25 @@ type createParams struct {
 }
 
 type listParams struct {
-	CreatedAt struct {
-		Gt  *time.Time `json:"gt"`
-		Lt  *time.Time `json:"lt"`
-		Gte *time.Time `json:"gte"`
-		Lte *time.Time `json:"lte"`
-	} `json:"created_at"`
-	UpdatedAt struct {
-		Gt  *time.Time `json:"gt"`
-		Lt  *time.Time `json:"lt"`
-		Gte *time.Time `json:"gte"`
-		Lte *time.Time `json:"lte"`
-	} `json:"updated_at"`
-	StartingAfter *uuid.UUID `json:"starting_after" validate:"excluded_with=EndingBefore"`
-	EndingBefore  *uuid.UUID `json:"ending_before"`
-	ParentGroup   *uuid.UUID `json:"parent_group"`
-	Description   *string    `json:"description" validate:"omitnil,lte=1024"`
-	Name          *string    `json:"name" validate:"omitnil,lte=64"`
-	Limit         *int       `json:"limit" validate:"omitnil,gt=0,lte=100"`
+	*database.PaginationParams
+	CreatedAt   *database.TimeRange `json:"created_at" validate:"omitnil"`
+	UpdatedAt   *database.TimeRange `json:"updated_at" validate:"omitnil"`
+	ParentGroup *uuid.UUID          `json:"parent_group"`
+	Description *string             `json:"description" validate:"omitnil,lte=1024"`
+	Name        *string             `json:"name" validate:"omitnil,lte=64"`
+}
+
+type updateParams struct {
+	Description *string    `json:"description" validate:"omitnil,lte=1024"`
+	Name        *string    `json:"name" validate:"omitnil,lte=64"`
+	ParentGroup *uuid.UUID `json:"parent_group" validate:"omitnil"`
+}
+
+func newListParams() *listParams {
+	limit := int32(int(10))
+	return &listParams{
+		PaginationParams: &database.PaginationParams{
+			Limit: &limit,
+		},
+	}
 }
