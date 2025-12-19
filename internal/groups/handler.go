@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"slices"
 
-	"github.com/d-darac/inventory-api/internal/api"
 	"github.com/d-darac/inventory-api/internal/middleware"
+	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/d-darac/inventory-assets/str"
 	"github.com/google/uuid"
@@ -34,20 +35,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	cgp := mapCreateParams(accountId, cp)
 
-	gr, err := h.Db.CreateGroup(context.Background(), cgp)
+	group, err := h.createGroup(accountId, cgp)
 	if err != nil {
 		api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 		return
 	}
 
-	api.ResJSON(w, http.StatusCreated, group{
-		ID:          gr.ID,
-		CreatedAt:   gr.UpdatedAt,
-		UpdatedAt:   gr.UpdatedAt,
-		Description: str.NullString(gr.Description),
-		Name:        gr.Name,
-		ParentGroup: gr.ParentGroup,
-	})
+	if cp.Expand != nil && slices.Contains(*cp.Expand, "parent_group") {
+		id, err := api.ExpandField(&group.ParentGroup, accountId, h.getGroup)
+		if err != nil {
+			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(id, "group"))
+			return
+		}
+	}
+	api.ResJSON(w, http.StatusCreated, group)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -139,13 +140,13 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, g := range groups {
-		listRes.Data = append(listRes.Data, group{
+		listRes.Data = append(listRes.Data, Group{
 			ID:          g.ID,
 			CreatedAt:   g.CreatedAt,
 			UpdatedAt:   g.UpdatedAt,
 			Description: str.NullString(g.Description),
 			Name:        g.Name,
-			ParentGroup: g.ParentGroup,
+			ParentGroup: api.Expandable{ID: g.ParentGroup},
 		})
 	}
 
@@ -160,20 +161,32 @@ func (h *Handler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gr, err := h.getGroup(groupdId, accountId)
+	rp := &retrieveParams{}
+	if errRes := api.JsonDecode(r, rp, w); errRes != nil {
+		errRes.ResError(w, http.StatusBadRequest, nil)
+		return
+	}
+
+	if errListRes := validator.ValidateRequestParams(rp); errListRes != nil {
+		errListRes.ResError(w, http.StatusBadRequest, nil)
+		return
+	}
+
+	group, err := h.getGroup(groupdId, accountId)
 	if err != nil {
 		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupdId, "group"))
 		return
 	}
 
-	api.ResJSON(w, http.StatusOK, group{
-		ID:          gr.ID,
-		CreatedAt:   gr.CreatedAt,
-		UpdatedAt:   gr.UpdatedAt,
-		Description: str.NullString(gr.Description),
-		Name:        gr.Name,
-		ParentGroup: gr.ParentGroup,
-	})
+	if rp.Expand != nil && slices.Contains(*rp.Expand, "parent_group") {
+		id, err := api.ExpandField(&group.ParentGroup, accountId, h.getGroup)
+		if err != nil {
+			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(id, "group"))
+			return
+		}
+	}
+
+	api.ResJSON(w, http.StatusOK, group)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -191,7 +204,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	up := &updateParams{}
-
 	if errRes := api.JsonDecode(r, up, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
@@ -204,23 +216,39 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	ugp := mapUpdateParams(groupdId, accountId, up)
 
-	ugr, err := h.Db.UpdateGroup(context.Background(), ugp)
+	group, err := h.updateGroup(groupdId, accountId, ugp)
 	if err != nil {
 		api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 		return
 	}
 
-	api.ResJSON(w, http.StatusOK, group{
-		ID:          ugr.ID,
-		CreatedAt:   ugr.CreatedAt,
-		UpdatedAt:   ugr.UpdatedAt,
-		Description: str.NullString(ugr.Description),
-		Name:        ugr.Name,
-		ParentGroup: ugr.ParentGroup,
-	})
+	if up.Expand != nil && slices.Contains(*up.Expand, "parent_group") {
+		id, err := api.ExpandField(&group.ParentGroup, accountId, h.getGroup)
+		if err != nil {
+			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(id, "group"))
+			return
+		}
+	}
+
+	api.ResJSON(w, http.StatusOK, group)
 }
 
-func (h *Handler) getGroup(id, accountId uuid.UUID) (*group, error) {
+func (h *Handler) createGroup(accountId uuid.UUID, cgp database.CreateGroupParams) (*Group, error) {
+	gr, err := h.Db.CreateGroup(context.Background(), cgp)
+	if err != nil {
+		return nil, err
+	}
+	return &Group{
+		ID:          gr.ID,
+		CreatedAt:   gr.UpdatedAt,
+		UpdatedAt:   gr.UpdatedAt,
+		Description: str.NullString(gr.Description),
+		Name:        gr.Name,
+		ParentGroup: api.Expandable{ID: gr.ParentGroup},
+	}, nil
+}
+
+func (h *Handler) getGroup(id, accountId uuid.UUID) (*Group, error) {
 	gr, err := h.Db.GetGroup(context.Background(), database.GetGroupParams{
 		ID:        id,
 		AccountID: accountId,
@@ -228,12 +256,27 @@ func (h *Handler) getGroup(id, accountId uuid.UUID) (*group, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &group{
+	return &Group{
 		ID:          gr.ID,
 		CreatedAt:   gr.CreatedAt,
 		UpdatedAt:   gr.UpdatedAt,
 		Description: str.NullString(gr.Description),
 		Name:        gr.Name,
-		ParentGroup: gr.ParentGroup,
+		ParentGroup: api.Expandable{ID: gr.ParentGroup},
+	}, nil
+}
+
+func (h *Handler) updateGroup(id, accountId uuid.UUID, ugp database.UpdateGroupParams) (*Group, error) {
+	ugr, err := h.Db.UpdateGroup(context.Background(), ugp)
+	if err != nil {
+		return nil, err
+	}
+	return &Group{
+		ID:          ugr.ID,
+		CreatedAt:   ugr.CreatedAt,
+		UpdatedAt:   ugr.UpdatedAt,
+		Description: str.NullString(ugr.Description),
+		Name:        ugr.Name,
+		ParentGroup: api.Expandable{ID: ugr.ParentGroup},
 	}, nil
 }
