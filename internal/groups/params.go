@@ -9,6 +9,7 @@ type createParams struct {
 	Description *string    `json:"description" validate:"omitnil,lte=1024"`
 	Name        string     `json:"name" validate:"required,lte=64"`
 	ParentGroup *uuid.UUID `json:"parent_group"`
+	expandParam
 }
 
 type listParams struct {
@@ -20,7 +21,7 @@ type listParams struct {
 	Name        *string             `json:"name" validate:"omitnil,lte=64"`
 }
 
-type retrieveParams struct {
+type expandParam struct {
 	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
@@ -28,6 +29,7 @@ type updateParams struct {
 	Description *string    `json:"description" validate:"omitnil,lte=1024"`
 	Name        *string    `json:"name" validate:"omitnil,lte=64"`
 	ParentGroup *uuid.UUID `json:"parent_group" validate:"omitnil"`
+	expandParam
 }
 
 func newListParams() *listParams {

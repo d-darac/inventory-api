@@ -161,13 +161,13 @@ func (h *Handler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rp := &retrieveParams{}
-	if errRes := api.JsonDecode(r, rp, w); errRes != nil {
+	ep := &expandParam{}
+	if errRes := api.JsonDecode(r, ep, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(rp); errListRes != nil {
+	if errListRes := validator.ValidateRequestParams(ep); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
@@ -178,7 +178,7 @@ func (h *Handler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if rp.Expand != nil && slices.Contains(*rp.Expand, "parent_group") {
+	if ep.Expand != nil && slices.Contains(*ep.Expand, "parent_group") {
 		id, err := api.ExpandField(&group.ParentGroup, accountId, h.getGroup)
 		if err != nil {
 			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(id, "group"))
