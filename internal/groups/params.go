@@ -20,6 +20,10 @@ type listParams struct {
 	Name        *string             `json:"name" validate:"omitnil,lte=64"`
 }
 
+type retrieveParams struct {
+	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
+}
+
 type updateParams struct {
 	Description *string    `json:"description" validate:"omitnil,lte=1024"`
 	Name        *string    `json:"name" validate:"omitnil,lte=64"`
