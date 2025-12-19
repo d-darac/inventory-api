@@ -8,9 +8,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/d-darac/inventory-api/internal/api"
 	"github.com/d-darac/inventory-api/internal/middleware"
 	"github.com/d-darac/inventory-api/internal/router"
+	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"

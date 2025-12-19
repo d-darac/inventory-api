@@ -12,7 +12,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/d-darac/inventory-api/internal/api"
+	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/auth"
 	"github.com/d-darac/inventory-assets/database"
 	"golang.org/x/text/cases"

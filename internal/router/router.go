@@ -3,8 +3,8 @@ package router
 import (
 	"net/http"
 
-	"github.com/d-darac/inventory-api/internal/api"
 	"github.com/d-darac/inventory-api/internal/groups"
+	"github.com/d-darac/inventory-assets/api"
 )
 
 func LoadRoutes(mux *http.ServeMux, cfg *api.ApiConfig) {
