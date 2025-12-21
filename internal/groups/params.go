@@ -6,19 +6,19 @@ import (
 )
 
 type createParams struct {
-	Description *string    `json:"description" validate:"omitnil,lte=1024"`
-	Name        string     `json:"name" validate:"required,lte=64"`
+	*expandParam
+	Description *string    `json:"description" validate:"omitnil"`
+	Name        string     `json:"name" validate:"required"`
 	ParentGroup *uuid.UUID `json:"parent_group"`
-	expandParam
 }
 
 type listParams struct {
 	*database.PaginationParams
 	CreatedAt   *database.TimeRange `json:"created_at" validate:"omitnil"`
-	UpdatedAt   *database.TimeRange `json:"updated_at" validate:"omitnil"`
 	ParentGroup *uuid.UUID          `json:"parent_group"`
-	Description *string             `json:"description" validate:"omitnil,lte=1024"`
-	Name        *string             `json:"name" validate:"omitnil,lte=64"`
+	Description *string             `json:"description" validate:"omitnil"`
+	Name        *string             `json:"name" validate:"omitnil"`
+	UpdatedAt   *database.TimeRange `json:"updated_at" validate:"omitnil"`
 }
 
 type expandParam struct {
@@ -26,10 +26,10 @@ type expandParam struct {
 }
 
 type updateParams struct {
-	Description *string    `json:"description" validate:"omitnil,lte=1024"`
-	Name        *string    `json:"name" validate:"omitnil,lte=64"`
+	*expandParam
+	Description *string    `json:"description" validate:"omitnil"`
+	Name        *string    `json:"name" validate:"omitnil"`
 	ParentGroup *uuid.UUID `json:"parent_group" validate:"omitnil"`
-	expandParam
 }
 
 func newListParams() *listParams {

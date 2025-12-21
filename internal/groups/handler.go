@@ -35,7 +35,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	cgp := mapCreateParams(accountId, cp)
 
-	group, err := h.createGroup(accountId, cgp)
+	group, err := h.createGroup(cgp)
 	if err != nil {
 		api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 		return
@@ -53,23 +53,23 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	groupdId, errMsg := api.GetIdFromPath(r)
+	groupId, errMsg := api.GetIdFromPath(r)
 	if len(errMsg) > 0 {
 		api.ResError(w, http.StatusBadRequest, errMsg, api.InvalidRequestError, nil, nil)
 		return
 	}
 
 	_, err := h.Db.GetGroup(context.Background(), database.GetGroupParams{
-		ID:        groupdId,
+		ID:        groupId,
 		AccountID: accountId,
 	})
 	if err != nil {
-		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupdId, "group"))
+		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupId, "group"))
 		return
 	}
 
 	err = h.Db.DeleteGroup(context.Background(), database.DeleteGroupParams{
-		ID:        groupdId,
+		ID:        groupId,
 		AccountID: accountId,
 	})
 	if err != nil {
@@ -155,7 +155,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Retrieve(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	groupdId, errMsg := api.GetIdFromPath(r)
+	groupId, errMsg := api.GetIdFromPath(r)
 	if len(errMsg) > 0 {
 		api.ResError(w, http.StatusBadRequest, errMsg, api.InvalidRequestError, nil, nil)
 		return
@@ -172,9 +172,9 @@ func (h *Handler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, err := h.getGroup(groupdId, accountId)
+	group, err := h.getGroup(groupId, accountId)
 	if err != nil {
-		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupdId, "group"))
+		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupId, "group"))
 		return
 	}
 
@@ -191,15 +191,15 @@ func (h *Handler) Retrieve(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	groupdId, errMsg := api.GetIdFromPath(r)
+	groupId, errMsg := api.GetIdFromPath(r)
 	if len(errMsg) > 0 {
 		api.ResError(w, http.StatusBadRequest, errMsg, api.InvalidRequestError, nil, nil)
 		return
 	}
 
-	_, err := h.getGroup(groupdId, accountId)
+	_, err := h.getGroup(groupId, accountId)
 	if err != nil {
-		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupdId, "group"))
+		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupId, "group"))
 		return
 	}
 
@@ -214,9 +214,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ugp := mapUpdateParams(groupdId, accountId, up)
+	ugp := mapUpdateParams(groupId, accountId, up)
 
-	group, err := h.updateGroup(groupdId, accountId, ugp)
+	group, err := h.updateGroup(ugp)
 	if err != nil {
 		api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 		return
@@ -233,7 +233,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	api.ResJSON(w, http.StatusOK, group)
 }
 
-func (h *Handler) createGroup(accountId uuid.UUID, cgp database.CreateGroupParams) (*Group, error) {
+func (h *Handler) createGroup(cgp database.CreateGroupParams) (*Group, error) {
 	gr, err := h.Db.CreateGroup(context.Background(), cgp)
 	if err != nil {
 		return nil, err
@@ -266,7 +266,7 @@ func (h *Handler) getGroup(id, accountId uuid.UUID) (*Group, error) {
 	}, nil
 }
 
-func (h *Handler) updateGroup(id, accountId uuid.UUID, ugp database.UpdateGroupParams) (*Group, error) {
+func (h *Handler) updateGroup(ugp database.UpdateGroupParams) (*Group, error) {
 	ugr, err := h.Db.UpdateGroup(context.Background(), ugp)
 	if err != nil {
 		return nil, err
