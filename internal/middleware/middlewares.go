@@ -127,6 +127,8 @@ func (mw *Middleware) CheckRouteAndMethodMw(next http.HandlerFunc) http.HandlerF
 		pathsMethods := map[string][]string{
 			`^\/v1\/groups$`:         {"GET", "POST"},
 			`^\/v1\/groups\/[^\/]+$`: {"DELETE", "GET", "PUT"},
+			`^\/v1\/items$`:          {"GET", "POST"},
+			`^\/v1\/items\/[^\/]+$`:  {"DELETE", "GET", "PUT"},
 		}
 		if statusCode, err := validateRoute(r.Method, r.URL.Path, pathsMethods); err != nil {
 			api.ResError(w, statusCode, err.Error(), api.InvalidRequestError, nil, nil)
