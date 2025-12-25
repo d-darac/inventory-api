@@ -1,46 +1,48 @@
-package itemidentifiers
+package handlers
 
 import (
 	"database/sql"
 	"net/http"
 	"slices"
 
+	itemidentifiers "github.com/d-darac/inventory-api/internal/item_identifiers"
+	"github.com/d-darac/inventory-api/internal/items"
+	"github.com/d-darac/inventory-api/internal/mappers"
 	"github.com/d-darac/inventory-api/internal/middleware"
-	"github.com/d-darac/inventory-api/internal/services"
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
-var validator = api.NewValidator()
-
 type ItemIdentifiersHandler struct {
-	ItemIdentifiers services.ItemIdentifiersService
-	Items           services.ItemsService
+	ItemIdentifiers itemidentifiers.ItemIdentifiersService
+	Items           items.ItemsService
+	validator       *api.Validator
 }
 
-func NewHandler(db *database.Queries) *ItemIdentifiersHandler {
+func NewItemIdentifiersHandler(db *database.Queries) *ItemIdentifiersHandler {
 	return &ItemIdentifiersHandler{
-		ItemIdentifiers: *services.NewItemIdentifiersService(db),
-		Items:           *services.NewItemsService(db),
+		ItemIdentifiers: *itemidentifiers.NewItemIdentifiersService(db),
+		Items:           *items.NewItemsService(db),
+		validator:       api.NewValidator(),
 	}
 }
 
 func (h *ItemIdentifiersHandler) Create(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	cp := &CreateParams{}
+	cp := &itemidentifiers.CreateItemIdentifierParams{}
 
 	if errRes := api.JsonDecode(r, cp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(cp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(cp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	ciip := mapCreateParams(accountId, cp)
+	ciip := mappers.MapCreateItemIdentifierParams(accountId, cp)
 
 	itemIdentifier, err := h.ItemIdentifiers.Create(ciip)
 	if err != nil {
@@ -90,14 +92,14 @@ func (h *ItemIdentifiersHandler) Delete(w http.ResponseWriter, r *http.Request) 
 func (h *ItemIdentifiersHandler) List(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
 	listRes := api.NewListResponse(r)
-	lp := NewListParams()
+	lp := itemidentifiers.NewListItemIdentifierParams()
 
 	if errRes := api.JsonDecode(r, lp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(lp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(lp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
@@ -125,7 +127,7 @@ func (h *ItemIdentifiersHandler) List(w http.ResponseWriter, r *http.Request) {
 		lp.EndingBeforeDate = &itemIdentifier.CreatedAt
 	}
 
-	liip := mapListParams(accountId, lp)
+	liip := mappers.MapListItemIdentifiersParams(accountId, lp)
 
 	itemIdentifiers, hasMore, err := h.ItemIdentifiers.List(liip)
 	if err != nil {
@@ -153,13 +155,13 @@ func (h *ItemIdentifiersHandler) Retrieve(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	rp := &RetrieveParams{}
+	rp := &itemidentifiers.RetrieveItemIdentifierParams{}
 	if errRes := api.JsonDecode(r, rp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(rp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(rp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
@@ -204,18 +206,18 @@ func (h *ItemIdentifiersHandler) Update(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	up := &UpdateParams{}
+	up := &itemidentifiers.UpdateItemIdentifierParams{}
 	if errRes := api.JsonDecode(r, up, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(up); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(up); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	uiip := mapUpdateParams(itemIdentifierId, accountId, up)
+	uiip := mappers.MapUpdateItemIdentifierParams(itemIdentifierId, accountId, up)
 
 	itemIdentifier, err := h.ItemIdentifiers.Update(uiip)
 	if err != nil {

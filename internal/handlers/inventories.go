@@ -1,56 +1,58 @@
-package prices
+package handlers
 
 import (
 	"database/sql"
 	"net/http"
 	"slices"
 
+	"github.com/d-darac/inventory-api/internal/inventories"
+	"github.com/d-darac/inventory-api/internal/items"
+	"github.com/d-darac/inventory-api/internal/mappers"
 	"github.com/d-darac/inventory-api/internal/middleware"
-	"github.com/d-darac/inventory-api/internal/services"
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
-var validator = api.NewValidator()
-
-type PricesHandler struct {
-	Prices services.PricesService
-	Items  services.ItemsService
+type InventoriesHandler struct {
+	Inventories inventories.InventoriesService
+	Items       items.ItemsService
+	validator   *api.Validator
 }
 
-func NewHandler(db *database.Queries) *PricesHandler {
-	return &PricesHandler{
-		Prices: *services.NewPricesService(db),
-		Items:  *services.NewItemsService(db),
+func NewInventoriesHandler(db *database.Queries) *InventoriesHandler {
+	return &InventoriesHandler{
+		Inventories: *inventories.NewInventoriesService(db),
+		Items:       *items.NewItemsService(db),
+		validator:   api.NewValidator(),
 	}
 }
 
-func (h *PricesHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *InventoriesHandler) Create(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	cp := &CreateParams{}
+	cp := &inventories.CreateInventoryParams{}
 
 	if errRes := api.JsonDecode(r, cp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(cp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(cp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	cpp := mapCreateParams(accountId, cp)
+	cip := mappers.MapCreateInventoryParams(accountId, cp)
 
-	price, err := h.Prices.Create(cpp)
+	inventory, err := h.Inventories.Create(cip)
 	if err != nil {
 		api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 		return
 	}
 
 	if cp.Expand != nil && slices.Contains(*cp.Expand, "item") {
-		id, err := api.ExpandField(&price.Item, database.GetItemParams{
-			ID:        price.Item.ID.UUID,
+		id, err := api.ExpandField(&inventory.Item, database.GetItemParams{
+			ID:        inventory.Item.ID.UUID,
 			AccountID: accountId,
 		}, h.Items.Get)
 		if err != nil {
@@ -58,26 +60,26 @@ func (h *PricesHandler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	api.ResJSON(w, http.StatusCreated, price)
+	api.ResJSON(w, http.StatusCreated, inventory)
 }
 
-func (h *PricesHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *InventoriesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	priceId, errMsg := api.GetIdFromPath(r)
+	inventoryId, errMsg := api.GetIdFromPath(r)
 	if len(errMsg) > 0 {
 		api.ResError(w, http.StatusBadRequest, errMsg, api.InvalidRequestError, nil, nil)
 		return
 	}
-	_, err := h.Prices.Get(database.GetPriceParams{
-		ID:        priceId,
+	_, err := h.Inventories.Get(database.GetInventoryParams{
+		ID:        inventoryId,
 		AccountID: accountId,
 	})
 	if err != nil {
-		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(priceId, "price"))
+		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(inventoryId, "inventory"))
 		return
 	}
-	err = h.Prices.Delete(database.DeletePriceParams{
-		ID:        priceId,
+	err = h.Inventories.Delete(database.DeleteInventoryParams{
+		ID:        inventoryId,
 		AccountID: accountId,
 	})
 	if err != nil {
@@ -87,47 +89,47 @@ func (h *PricesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	api.ResJSON(w, http.StatusNoContent, nil)
 }
 
-func (h *PricesHandler) List(w http.ResponseWriter, r *http.Request) {
+func (h *InventoriesHandler) List(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
 	listRes := api.NewListResponse(r)
-	lp := NewListParams()
+	lp := inventories.NewListInventoriesParams()
 
 	if errRes := api.JsonDecode(r, lp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(lp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(lp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
 	if lp.StartingAfter != nil {
-		price, err := h.Prices.Get(database.GetPriceParams{
+		inventory, err := h.Inventories.Get(database.GetInventoryParams{
 			ID:        *lp.StartingAfter,
 			AccountID: accountId,
 		})
 		if err != nil {
-			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(*lp.StartingAfter, "price"))
+			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(*lp.StartingAfter, "inventory"))
 			return
 		}
-		lp.StartingAfterDate = &price.CreatedAt
+		lp.StartingAfterDate = &inventory.CreatedAt
 	}
 	if lp.EndingBefore != nil {
-		price, err := h.Prices.Get(database.GetPriceParams{
+		inventory, err := h.Inventories.Get(database.GetInventoryParams{
 			ID:        *lp.EndingBefore,
 			AccountID: accountId,
 		})
 		if err != nil {
-			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(*lp.EndingBefore, "price"))
+			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(*lp.EndingBefore, "inventory"))
 			return
 		}
-		lp.EndingBeforeDate = &price.CreatedAt
+		lp.EndingBeforeDate = &inventory.CreatedAt
 	}
 
-	lpp := mapListParams(accountId, lp)
+	lip := mappers.MapListInventoryParams(accountId, lp)
 
-	prices, hasMore, err := h.Prices.List(lpp)
+	inventories, hasMore, err := h.Inventories.List(lip)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			api.ResJSON(w, http.StatusOK, listRes)
@@ -137,45 +139,45 @@ func (h *PricesHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(prices) != 0 {
-		listRes.Data = append(listRes.Data, prices)
+	if len(inventories) != 0 {
+		listRes.Data = append(listRes.Data, inventories)
 		listRes.HasMore = hasMore
 	}
 
 	api.ResJSON(w, http.StatusOK, listRes)
 }
 
-func (h *PricesHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
+func (h *InventoriesHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	priceId, errMsg := api.GetIdFromPath(r)
+	inventoryId, errMsg := api.GetIdFromPath(r)
 	if len(errMsg) > 0 {
 		api.ResError(w, http.StatusBadRequest, errMsg, api.InvalidRequestError, nil, nil)
 		return
 	}
 
-	rp := &RetrieveParams{}
+	rp := &inventories.RetrieveInventoryParams{}
 	if errRes := api.JsonDecode(r, rp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(rp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(rp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	price, err := h.Prices.Get(database.GetPriceParams{
-		ID:        priceId,
+	inventory, err := h.Inventories.Get(database.GetInventoryParams{
+		ID:        inventoryId,
 		AccountID: accountId,
 	})
 	if err != nil {
-		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(priceId, "price"))
+		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(inventoryId, "inventory"))
 		return
 	}
 
 	if rp.Expand != nil && slices.Contains(*rp.Expand, "item") {
-		id, err := api.ExpandField(&price.Item, database.GetItemParams{
-			ID:        price.Item.ID.UUID,
+		id, err := api.ExpandField(&inventory.Item, database.GetItemParams{
+			ID:        inventory.Item.ID.UUID,
 			AccountID: accountId,
 		}, h.Items.Get)
 		if err != nil {
@@ -184,48 +186,48 @@ func (h *PricesHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	api.ResJSON(w, http.StatusOK, price)
+	api.ResJSON(w, http.StatusOK, inventory)
 }
 
-func (h *PricesHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *InventoriesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	priceId, errMsg := api.GetIdFromPath(r)
+	inventoryId, errMsg := api.GetIdFromPath(r)
 	if len(errMsg) > 0 {
 		api.ResError(w, http.StatusBadRequest, errMsg, api.InvalidRequestError, nil, nil)
 		return
 	}
 
-	_, err := h.Prices.Get(database.GetPriceParams{
-		ID:        priceId,
+	_, err := h.Inventories.Get(database.GetInventoryParams{
+		ID:        inventoryId,
 		AccountID: accountId,
 	})
 	if err != nil {
-		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(priceId, "price"))
+		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(inventoryId, "inventory"))
 		return
 	}
 
-	up := &UpdateParams{}
+	up := &inventories.UpdateInventoryParams{}
 	if errRes := api.JsonDecode(r, up, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(up); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(up); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	upp := mapUpdateParams(priceId, accountId, up)
+	uip := mappers.MapUpdateInventoryParams(inventoryId, accountId, up)
 
-	price, err := h.Prices.Update(upp)
+	inventory, err := h.Inventories.Update(uip)
 	if err != nil {
 		api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 		return
 	}
 
 	if up.Expand != nil && slices.Contains(*up.Expand, "item") {
-		id, err := api.ExpandField(&price.Item, database.GetItemParams{
-			ID:        price.Item.ID.UUID,
+		id, err := api.ExpandField(&inventory.Item, database.GetItemParams{
+			ID:        inventory.Item.ID.UUID,
 			AccountID: accountId,
 		}, h.Items.Get)
 		if err != nil {
@@ -234,5 +236,5 @@ func (h *PricesHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	api.ResJSON(w, http.StatusOK, price)
+	api.ResJSON(w, http.StatusOK, inventory)
 }

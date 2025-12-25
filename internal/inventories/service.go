@@ -1,23 +1,10 @@
-package services
+package inventories
 
 import (
 	"context"
-	"database/sql"
-	"time"
 
-	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
-	"github.com/google/uuid"
 )
-
-type Inventory struct {
-	ID        uuid.UUID      `json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	InStock   int32          `json:"in_stock"`
-	Orderable sql.NullInt32  `json:"orderable"`
-	Item      api.Expandable `json:"item"`
-}
 
 type InventoriesService struct {
 	Db *database.Queries
@@ -40,7 +27,6 @@ func (s *InventoriesService) Create(cip database.CreateInventoryParams) (*Invent
 		UpdatedAt: in.UpdatedAt,
 		InStock:   in.InStock,
 		Orderable: in.Orderable,
-		Item:      api.Expandable{ID: uuid.NullUUID{UUID: in.Item, Valid: true}},
 	}, nil
 }
 
@@ -59,7 +45,6 @@ func (s *InventoriesService) Get(gip database.GetInventoryParams) (*Inventory, e
 		UpdatedAt: in.UpdatedAt,
 		InStock:   in.InStock,
 		Orderable: in.Orderable,
-		Item:      api.Expandable{ID: uuid.NullUUID{UUID: in.Item, Valid: true}},
 	}, nil
 }
 
@@ -87,7 +72,6 @@ func (s *InventoriesService) List(lip database.ListInventoriesParams) (inventori
 			UpdatedAt: i.UpdatedAt,
 			InStock:   i.InStock,
 			Orderable: i.Orderable,
-			Item:      api.Expandable{ID: uuid.NullUUID{UUID: i.Item, Valid: true}},
 		})
 	}
 	return
@@ -104,6 +88,5 @@ func (s *InventoriesService) Update(uip database.UpdateInventoryParams) (*Invent
 		UpdatedAt: in.UpdatedAt,
 		InStock:   in.InStock,
 		Orderable: in.Orderable,
-		Item:      api.Expandable{ID: uuid.NullUUID{UUID: in.Item, Valid: true}},
 	}, nil
 }

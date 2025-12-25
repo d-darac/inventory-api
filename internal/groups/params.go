@@ -5,14 +5,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type CreateParams struct {
+type CreateGroupParams struct {
 	Description *string    `json:"description" validate:"omitnil"`
 	Name        string     `json:"name" validate:"required"`
 	ParentGroup *uuid.UUID `json:"parent_group" validate:"omitnil,uuid"`
 	Expand      *[]string  `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
-type ListParams struct {
+type ListGroupParams struct {
 	*database.PaginationParams
 	CreatedAt   *database.TimeRange `json:"created_at" validate:"omitnil"`
 	ParentGroup *uuid.UUID          `json:"parent_group" validate:"omitnil,uuid"`
@@ -21,20 +21,20 @@ type ListParams struct {
 	UpdatedAt   *database.TimeRange `json:"updated_at" validate:"omitnil"`
 }
 
-type RetrieveParams struct {
+type RetrieveGroupParams struct {
 	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
-type UpdateParams struct {
+type UpdateGroupParams struct {
 	Description *string    `json:"description" validate:"omitnil"`
 	Name        *string    `json:"name" validate:"omitnil"`
 	ParentGroup *uuid.UUID `json:"parent_group" validate:"omitnil,uuid"`
 	Expand      *[]string  `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
-func NewListParams() *ListParams {
+func NewListGroupParams() *ListGroupParams {
 	limit := int32(int(10))
-	return &ListParams{
+	return &ListGroupParams{
 		PaginationParams: &database.PaginationParams{
 			Limit: &limit,
 		},

@@ -1,46 +1,71 @@
-package items
+package handlers
 
 import (
 	"database/sql"
 	"net/http"
 	"slices"
 
+	"github.com/d-darac/inventory-api/internal/groups"
+	"github.com/d-darac/inventory-api/internal/inventories"
+	"github.com/d-darac/inventory-api/internal/items"
+	"github.com/d-darac/inventory-api/internal/mappers"
 	"github.com/d-darac/inventory-api/internal/middleware"
-	"github.com/d-darac/inventory-api/internal/services"
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
 type ItemsHandler struct {
-	Groups *services.GroupsService
-	Items  *services.ItemsService
+	Groups      *groups.GroupsService
+	Inventories *inventories.InventoriesService
+	Items       *items.ItemsService
+	validator   *api.Validator
 }
 
-var validator = api.NewValidator()
-
-func NewHandler(db *database.Queries) *ItemsHandler {
+func NewItemsHandler(db *database.Queries) *ItemsHandler {
 	return &ItemsHandler{
-		Items:  services.NewItemsService(db),
-		Groups: services.NewGroupsService(db),
+		Groups:      groups.NewGroupsService(db),
+		Inventories: inventories.NewInventoriesService(db),
+		Items:       items.NewItemsService(db),
+		validator:   api.NewValidator(),
 	}
 }
 
 func (h *ItemsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	cp := &CreateParams{}
+	cp := &items.CreateItemParams{}
 
 	if errRes := api.JsonDecode(r, cp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(cp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(cp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	cip := mapCreateParams(accountId, cp)
+	if cp.GroupData != nil {
+		cgp := mappers.MapCreateGroupParams(accountId, cp.GroupData)
+		group, err := h.Groups.Create(cgp)
+		if err != nil {
+			api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
+			return
+		}
+		cp.Group = &group.ID
+	}
+
+	if cp.InventoryData != nil {
+		cip := mappers.MapCreateInventoryParams(accountId, cp.InventoryData)
+		inventory, err := h.Inventories.Create(cip)
+		if err != nil {
+			api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
+			return
+		}
+		cp.Inventory = &inventory.ID
+	}
+
+	cip := mappers.MapCreateItemParams(accountId, cp)
 
 	item, err := h.Items.Create(cip)
 	if err != nil {
@@ -83,14 +108,14 @@ func (h *ItemsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
 	listRes := api.NewListResponse(r)
-	lp := NewListParams()
+	lp := items.NewListItemsParams()
 
 	if errRes := api.JsonDecode(r, lp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(lp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(lp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
@@ -118,7 +143,7 @@ func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 		lp.EndingBeforeDate = &item.CreatedAt
 	}
 
-	lip := mapListParams(accountId, lp)
+	lip := mappers.MapListItemsParams(accountId, lp)
 
 	items, hasMore, err := h.Items.List(lip)
 	if err != nil {
@@ -144,13 +169,13 @@ func (h *ItemsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rp := &RetrieveParams{}
+	rp := &items.RetrieveItemParams{}
 	if errRes := api.JsonDecode(r, rp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(rp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(rp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
@@ -195,18 +220,18 @@ func (h *ItemsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	up := &UpdateParams{}
+	up := &items.UpdateItemParams{}
 	if errRes := api.JsonDecode(r, up, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(up); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(up); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	uip := mapUpdateParams(itemId, accountId, up)
+	uip := mappers.MapUpdateItemParams(itemId, accountId, up)
 
 	item, err := h.Items.Update(uip)
 	if err != nil {

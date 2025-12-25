@@ -1,12 +1,13 @@
-package inventories
+package mappers
 
 import (
+	"github.com/d-darac/inventory-api/internal/inventories"
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
-func mapCreateParams(accountId uuid.UUID, cp *CreateParams) database.CreateInventoryParams {
+func MapCreateInventoryParams(accountId uuid.UUID, cp *inventories.CreateInventoryParams) database.CreateInventoryParams {
 	cip := database.CreateInventoryParams{
 		AccountID: accountId,
 		InStock:   cp.InStock,
@@ -15,7 +16,7 @@ func mapCreateParams(accountId uuid.UUID, cp *CreateParams) database.CreateInven
 	return cip
 }
 
-func mapListParams(accountId uuid.UUID, lp *ListParams) database.ListInventoriesParams {
+func MapListInventoryParams(accountId uuid.UUID, lp *inventories.ListInventoriesParams) database.ListInventoriesParams {
 	lip := database.ListInventoriesParams{
 		AccountID: accountId,
 	}
@@ -25,7 +26,7 @@ func mapListParams(accountId uuid.UUID, lp *ListParams) database.ListInventories
 	return lip
 }
 
-func mapUpdateParams(id, accountId uuid.UUID, up *UpdateParams) database.UpdateInventoryParams {
+func MapUpdateInventoryParams(id, accountId uuid.UUID, up *inventories.UpdateInventoryParams) database.UpdateInventoryParams {
 	return database.UpdateInventoryParams{
 		AccountID: accountId,
 		ID:        id,

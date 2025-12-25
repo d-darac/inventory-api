@@ -1,44 +1,45 @@
-package groups
+package handlers
 
 import (
 	"database/sql"
 	"net/http"
 	"slices"
 
+	"github.com/d-darac/inventory-api/internal/groups"
+	"github.com/d-darac/inventory-api/internal/mappers"
 	"github.com/d-darac/inventory-api/internal/middleware"
-	"github.com/d-darac/inventory-api/internal/services"
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
-var validator = api.NewValidator()
-
 type GroupsHandler struct {
-	Groups services.GroupsService
+	Groups    groups.GroupsService
+	validator *api.Validator
 }
 
-func NewHandler(db *database.Queries) *GroupsHandler {
+func NewGroupsHandler(db *database.Queries) *GroupsHandler {
 	return &GroupsHandler{
-		Groups: *services.NewGroupsService(db),
+		Groups:    *groups.NewGroupsService(db),
+		validator: api.NewValidator(),
 	}
 }
 
 func (h *GroupsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	cp := &CreateParams{}
+	cp := &groups.CreateGroupParams{}
 
 	if errRes := api.JsonDecode(r, cp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(cp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(cp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	cgp := mapCreateParams(accountId, cp)
+	cgp := mappers.MapCreateGroupParams(accountId, cp)
 
 	group, err := h.Groups.Create(cgp)
 	if err != nil {
@@ -88,14 +89,14 @@ func (h *GroupsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *GroupsHandler) List(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
 	listRes := api.NewListResponse(r)
-	lp := NewListParams()
+	lp := groups.NewListGroupParams()
 
 	if errRes := api.JsonDecode(r, lp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(lp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(lp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
@@ -123,7 +124,7 @@ func (h *GroupsHandler) List(w http.ResponseWriter, r *http.Request) {
 		lp.EndingBeforeDate = &group.CreatedAt
 	}
 
-	lgp := mapListParams(accountId, lp)
+	lgp := mappers.MapListGroupsParams(accountId, lp)
 
 	groups, hasMore, err := h.Groups.List(lgp)
 	if err != nil {
@@ -151,13 +152,13 @@ func (h *GroupsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rp := &RetrieveParams{}
+	rp := &groups.RetrieveGroupParams{}
 	if errRes := api.JsonDecode(r, rp, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(rp); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(rp); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
@@ -202,18 +203,18 @@ func (h *GroupsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	up := &UpdateParams{}
+	up := &groups.UpdateGroupParams{}
 	if errRes := api.JsonDecode(r, up, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	if errListRes := validator.ValidateRequestParams(up); errListRes != nil {
+	if errListRes := h.validator.ValidateRequestParams(up); errListRes != nil {
 		errListRes.ResError(w, http.StatusBadRequest, nil)
 		return
 	}
 
-	ugp := mapUpdateParams(groupId, accountId, up)
+	ugp := mappers.MapUpdateGroupParams(groupId, accountId, up)
 
 	group, err := h.Groups.Update(ugp)
 	if err != nil {

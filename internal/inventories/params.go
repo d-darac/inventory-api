@@ -5,32 +5,32 @@ import (
 	"github.com/google/uuid"
 )
 
-type CreateParams struct {
+type CreateInventoryParams struct {
 	InStock   int32     `json:"in_stock" validate:"required"`
 	Item      uuid.UUID `json:"item" validate:"required,uuid"`
 	Orderable *int32    `json:"orderable" validate:"omitnil"`
 	Expand    *[]string `json:"expand" validate:"omitnil,dive,oneof=item"`
 }
 
-type ListParams struct {
+type ListInventoriesParams struct {
 	*database.PaginationParams
 	CreatedAt *database.TimeRange `json:"created_at" validate:"omitnil"`
 	UpdatedAt *database.TimeRange `json:"updated_at" validate:"omitnil"`
 }
 
-type RetrieveParams struct {
+type RetrieveInventoryParams struct {
 	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=item"`
 }
 
-type UpdateParams struct {
+type UpdateInventoryParams struct {
 	InStock   *int32    `json:"in_stock" validate:"omitnil"`
 	Orderable *int32    `json:"orderable" validate:"omitnil"`
 	Expand    *[]string `json:"expand" validate:"omitnil,dive,oneof=item"`
 }
 
-func NewListParams() *ListParams {
+func NewListInventoriesParams() *ListInventoriesParams {
 	limit := int32(int(10))
-	return &ListParams{
+	return &ListInventoriesParams{
 		PaginationParams: &database.PaginationParams{
 			Limit: &limit,
 		},
