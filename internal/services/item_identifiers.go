@@ -56,9 +56,11 @@ func (s *ItemIdentifiersService) Create(ciip database.CreateItemIdentifierParams
 		Sku:       str.NullString(ii.Sku),
 	}, nil
 }
+
 func (s *ItemIdentifiersService) Delete(diip database.DeleteItemIdentifierParams) error {
 	return s.Db.DeleteItemIdentifier(context.Background(), diip)
 }
+
 func (s *ItemIdentifiersService) Get(giip database.GetItemIdentifierParams) (*ItemIdentifier, error) {
 	ii, err := s.Db.GetItemIdentifier(context.Background(), giip)
 	if err != nil {
@@ -79,6 +81,7 @@ func (s *ItemIdentifiersService) Get(giip database.GetItemIdentifierParams) (*It
 		Sku:       str.NullString(ii.Sku),
 	}, nil
 }
+
 func (s *ItemIdentifiersService) List(liip database.ListItemIdentifiersParams) (itemIdentifiers []*ItemIdentifier, hasMore bool, err error) {
 	iis, err := s.Db.ListItemIdentifiers(context.Background(), liip)
 	if err != nil {
@@ -114,6 +117,7 @@ func (s *ItemIdentifiersService) List(liip database.ListItemIdentifiersParams) (
 	}
 	return
 }
+
 func (s *ItemIdentifiersService) Update(uiip database.UpdateItemIdentifierParams) (*ItemIdentifier, error) {
 	ii, err := s.Db.UpdateItemIdentifier(context.Background(), uiip)
 	if err != nil {
