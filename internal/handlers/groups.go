@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/d-darac/inventory-api/internal/groups"
 	"github.com/d-darac/inventory-api/internal/mappers"
 	"github.com/d-darac/inventory-api/internal/middleware"
+	"github.com/d-darac/inventory-api/internal/pkg/groups"
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
