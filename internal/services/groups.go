@@ -45,11 +45,12 @@ func (s *GroupsService) Create(cgp database.CreateGroupParams) (*Group, error) {
 	}, nil
 }
 
-func (s *GroupsService) Get(id, accountId uuid.UUID) (*Group, error) {
-	gr, err := s.Db.GetGroup(context.Background(), database.GetGroupParams{
-		ID:        id,
-		AccountID: accountId,
-	})
+func (s *GroupsService) Delete(dgp database.DeleteGroupParams) error {
+	return s.Db.DeleteGroup(context.Background(), dgp)
+}
+
+func (s *GroupsService) Get(ggp database.GetGroupParams) (*Group, error) {
+	gr, err := s.Db.GetGroup(context.Background(), ggp)
 	if err != nil {
 		return nil, err
 	}
@@ -63,17 +64,47 @@ func (s *GroupsService) Get(id, accountId uuid.UUID) (*Group, error) {
 	}, nil
 }
 
+func (s *GroupsService) List(lgp database.ListGroupsParams) (groups []*Group, hasMore bool, err error) {
+	grs, err := s.Db.ListGroups(context.Background(), lgp)
+	if err != nil {
+		return
+	}
+	if lgp.Limit.Valid {
+		hasMore = len(grs) > int(lgp.Limit.Int32)
+	} else {
+		hasMore = len(grs) > 10
+	}
+	if hasMore {
+		if lgp.EndingBefore.Valid {
+			grs = grs[1:]
+		} else {
+			grs = grs[:len(grs)-1]
+		}
+	}
+	for _, g := range grs {
+		groups = append(groups, &Group{
+			ID:          g.ID,
+			CreatedAt:   g.CreatedAt,
+			UpdatedAt:   g.UpdatedAt,
+			Description: str.NullString(g.Description),
+			Name:        g.Name,
+			ParentGroup: api.Expandable{ID: g.ParentGroup},
+		})
+	}
+	return groups, hasMore, err
+}
+
 func (s *GroupsService) Update(ugp database.UpdateGroupParams) (*Group, error) {
-	ugr, err := s.Db.UpdateGroup(context.Background(), ugp)
+	gr, err := s.Db.UpdateGroup(context.Background(), ugp)
 	if err != nil {
 		return nil, err
 	}
 	return &Group{
-		ID:          ugr.ID,
-		CreatedAt:   ugr.CreatedAt,
-		UpdatedAt:   ugr.UpdatedAt,
-		Description: str.NullString(ugr.Description),
-		Name:        ugr.Name,
-		ParentGroup: api.Expandable{ID: ugr.ParentGroup},
+		ID:          gr.ID,
+		CreatedAt:   gr.CreatedAt,
+		UpdatedAt:   gr.UpdatedAt,
+		Description: str.NullString(gr.Description),
+		Name:        gr.Name,
+		ParentGroup: api.Expandable{ID: gr.ParentGroup},
 	}, nil
 }
