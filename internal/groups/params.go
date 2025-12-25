@@ -5,36 +5,36 @@ import (
 	"github.com/google/uuid"
 )
 
-type createParams struct {
-	*expandParam
+type CreateParams struct {
 	Description *string    `json:"description" validate:"omitnil"`
 	Name        string     `json:"name" validate:"required"`
-	ParentGroup *uuid.UUID `json:"parent_group"`
+	ParentGroup *uuid.UUID `json:"parent_group" validate:"omitnil,uuid"`
+	Expand      *[]string  `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
-type listParams struct {
+type ListParams struct {
 	*database.PaginationParams
 	CreatedAt   *database.TimeRange `json:"created_at" validate:"omitnil"`
-	ParentGroup *uuid.UUID          `json:"parent_group"`
+	ParentGroup *uuid.UUID          `json:"parent_group" validate:"omitnil,uuid"`
 	Description *string             `json:"description" validate:"omitnil"`
 	Name        *string             `json:"name" validate:"omitnil"`
 	UpdatedAt   *database.TimeRange `json:"updated_at" validate:"omitnil"`
 }
 
-type expandParam struct {
+type RetrieveParams struct {
 	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
-type updateParams struct {
-	*expandParam
+type UpdateParams struct {
 	Description *string    `json:"description" validate:"omitnil"`
 	Name        *string    `json:"name" validate:"omitnil"`
-	ParentGroup *uuid.UUID `json:"parent_group" validate:"omitnil"`
+	ParentGroup *uuid.UUID `json:"parent_group" validate:"omitnil,uuid"`
+	Expand      *[]string  `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
-func newListParams() *listParams {
+func NewListParams() *ListParams {
 	limit := int32(int(10))
-	return &listParams{
+	return &ListParams{
 		PaginationParams: &database.PaginationParams{
 			Limit: &limit,
 		},
