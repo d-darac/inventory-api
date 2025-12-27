@@ -1,13 +1,12 @@
-package mappers
+package items
 
 import (
-	"github.com/d-darac/inventory-api/internal/pkg/items"
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
-func MapCreateItemParams(accountId uuid.UUID, cp *items.CreateItemParams) database.CreateItemParams {
+func MapCreateItemParams(accountId uuid.UUID, cp *CreateItemParams) database.CreateItemParams {
 	cip := database.CreateItemParams{
 		AccountID:     accountId,
 		Description:   api.NullString(cp.Description),
@@ -21,7 +20,7 @@ func MapCreateItemParams(accountId uuid.UUID, cp *items.CreateItemParams) databa
 	return cip
 }
 
-func MapListItemsParams(accountId uuid.UUID, lp *items.ListItemsParams) database.ListItemsParams {
+func MapListItemsParams(accountId uuid.UUID, lp *ListItemsParams) database.ListItemsParams {
 	lip := database.ListItemsParams{
 		AccountID:     accountId,
 		Active:        api.NullBool(lp.Active),
@@ -40,7 +39,7 @@ func MapListItemsParams(accountId uuid.UUID, lp *items.ListItemsParams) database
 	return lip
 }
 
-func MapUpdateItemParams(id uuid.UUID, accountId uuid.UUID, up *items.UpdateItemParams) database.UpdateItemParams {
+func MapUpdateItemParams(id uuid.UUID, accountId uuid.UUID, up *UpdateItemParams) database.UpdateItemParams {
 	uip := database.UpdateItemParams{
 		ID:            id,
 		AccountID:     accountId,

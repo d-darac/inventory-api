@@ -2,9 +2,11 @@ package itemidentifiers
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/d-darac/inventory-assets/str"
+	"github.com/google/uuid"
 )
 
 type ItemIdentifiersService struct {
@@ -17,105 +19,157 @@ func NewItemIdentifiersService(db *database.Queries) *ItemIdentifiersService {
 	}
 }
 
-func (s *ItemIdentifiersService) Create(ciip database.CreateItemIdentifierParams) (*ItemIdentifier, error) {
-	ii, err := s.Db.CreateItemIdentifier(context.Background(), ciip)
+func (s *ItemIdentifiersService) Create(accountId uuid.UUID, params *CreateItemIdentifiersParams) (*ItemIdentifiers, error) {
+	dbParams := MapCreateItemIdentifiersParams(accountId, params)
+	row, err := s.Db.CreateItemIdentifier(context.Background(), dbParams)
 	if err != nil {
 		return nil, err
 	}
-	return &ItemIdentifier{
-		ID:        ii.ID,
-		CreatedAt: ii.CreatedAt,
-		UpdatedAt: ii.UpdatedAt,
-		Ean:       str.NullString(ii.Ean),
-		Gtin:      str.NullString(ii.Gtin),
-		Isbn:      str.NullString(ii.Isbn),
-		Jan:       str.NullString(ii.Jan),
-		Mpn:       str.NullString(ii.Mpn),
-		Nsn:       str.NullString(ii.Nsn),
-		Upc:       str.NullString(ii.Upc),
-		Qr:        str.NullString(ii.Qr),
-		Sku:       str.NullString(ii.Sku),
-	}, nil
+
+	itemIdentifiers := &ItemIdentifiers{
+		ID:        row.ID,
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
+		Ean:       str.NullString(row.Ean),
+		Gtin:      str.NullString(row.Gtin),
+		Isbn:      str.NullString(row.Isbn),
+		Jan:       str.NullString(row.Jan),
+		Mpn:       str.NullString(row.Mpn),
+		Nsn:       str.NullString(row.Nsn),
+		Upc:       str.NullString(row.Upc),
+		Qr:        str.NullString(row.Qr),
+		Sku:       str.NullString(row.Sku),
+	}
+
+	return itemIdentifiers, nil
 }
 
-func (s *ItemIdentifiersService) Delete(diip database.DeleteItemIdentifierParams) error {
-	return s.Db.DeleteItemIdentifier(context.Background(), diip)
+func (s *ItemIdentifiersService) Delete(itemIdentifiersId, accountId uuid.UUID) error {
+	_, err := s.Get(itemIdentifiersId, accountId, &RetrieveItemIdentifiersParams{})
+	if err != nil {
+		return err
+	}
+	return s.Db.DeleteItemIdentifier(context.Background(), database.DeleteItemIdentifierParams{
+		ID:        itemIdentifiersId,
+		AccountID: accountId,
+	})
 }
 
-func (s *ItemIdentifiersService) Get(giip database.GetItemIdentifierParams) (*ItemIdentifier, error) {
-	ii, err := s.Db.GetItemIdentifier(context.Background(), giip)
+func (s *ItemIdentifiersService) Get(itemIdentifiersId, accountId uuid.UUID, params *RetrieveItemIdentifiersParams) (*ItemIdentifiers, error) {
+	row, err := s.Db.GetItemIdentifier(context.Background(), database.GetItemIdentifierParams{
+		ID:        itemIdentifiersId,
+		AccountID: accountId,
+	})
 	if err != nil {
 		return nil, err
 	}
-	return &ItemIdentifier{
-		ID:        ii.ID,
-		CreatedAt: ii.CreatedAt,
-		UpdatedAt: ii.UpdatedAt,
-		Ean:       str.NullString(ii.Ean),
-		Gtin:      str.NullString(ii.Gtin),
-		Isbn:      str.NullString(ii.Isbn),
-		Jan:       str.NullString(ii.Jan),
-		Mpn:       str.NullString(ii.Mpn),
-		Nsn:       str.NullString(ii.Nsn),
-		Upc:       str.NullString(ii.Upc),
-		Qr:        str.NullString(ii.Qr),
-		Sku:       str.NullString(ii.Sku),
-	}, nil
+
+	itemIdentifiers := &ItemIdentifiers{
+		ID:        row.ID,
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
+		Ean:       str.NullString(row.Ean),
+		Gtin:      str.NullString(row.Gtin),
+		Isbn:      str.NullString(row.Isbn),
+		Jan:       str.NullString(row.Jan),
+		Mpn:       str.NullString(row.Mpn),
+		Nsn:       str.NullString(row.Nsn),
+		Upc:       str.NullString(row.Upc),
+		Qr:        str.NullString(row.Qr),
+		Sku:       str.NullString(row.Sku),
+	}
+
+	return itemIdentifiers, nil
 }
 
-func (s *ItemIdentifiersService) List(liip database.ListItemIdentifiersParams) (itemIdentifiers []*ItemIdentifier, hasMore bool, err error) {
-	iis, err := s.Db.ListItemIdentifiers(context.Background(), liip)
+func (s *ItemIdentifiersService) List(accountId uuid.UUID, params *ListItemIdentifiersParams) (itemIdentifiers []*ItemIdentifiers, hasMore bool, err error) {
+	if params.StartingAfter != nil {
+		iis, err := s.Get(*params.StartingAfter, accountId, &RetrieveItemIdentifiersParams{})
+		if err != nil {
+			return itemIdentifiers, hasMore, err
+		}
+		params.StartingAfterDate = &iis.CreatedAt
+	}
+
+	if params.EndingBefore != nil {
+		iis, err := s.Get(*params.EndingBefore, accountId, &RetrieveItemIdentifiersParams{})
+		if err != nil {
+			return itemIdentifiers, hasMore, err
+		}
+		params.EndingBeforeDate = &iis.CreatedAt
+	}
+
+	dbParams := MapListItemIdentifiersParams(accountId, params)
+
+	rows, err := s.Db.ListItemIdentifiers(context.Background(), dbParams)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return itemIdentifiers, hasMore, nil
+		}
 		return
 	}
-	if liip.Limit.Valid {
-		hasMore = len(iis) > int(liip.Limit.Int32)
+
+	if dbParams.Limit.Valid {
+		hasMore = len(rows) > int(dbParams.Limit.Int32)
 	} else {
-		hasMore = len(iis) > 10
+		hasMore = len(rows) > 10
 	}
+
 	if hasMore {
-		if liip.EndingBefore.Valid {
-			iis = iis[1:]
+		if dbParams.EndingBefore.Valid {
+			rows = rows[1:]
 		} else {
-			iis = iis[:len(iis)-1]
+			rows = rows[:len(rows)-1]
 		}
 	}
-	for _, ii := range iis {
-		itemIdentifiers = append(itemIdentifiers, &ItemIdentifier{
-			ID:        ii.ID,
-			CreatedAt: ii.CreatedAt,
-			UpdatedAt: ii.UpdatedAt,
-			Ean:       str.NullString(ii.Ean),
-			Gtin:      str.NullString(ii.Gtin),
-			Isbn:      str.NullString(ii.Isbn),
-			Jan:       str.NullString(ii.Jan),
-			Mpn:       str.NullString(ii.Mpn),
-			Nsn:       str.NullString(ii.Nsn),
-			Upc:       str.NullString(ii.Upc),
-			Qr:        str.NullString(ii.Qr),
-			Sku:       str.NullString(ii.Sku),
+
+	for _, row := range rows {
+		itemIdentifiers = append(itemIdentifiers, &ItemIdentifiers{
+			ID:        row.ID,
+			CreatedAt: row.CreatedAt,
+			UpdatedAt: row.UpdatedAt,
+			Ean:       str.NullString(row.Ean),
+			Gtin:      str.NullString(row.Gtin),
+			Isbn:      str.NullString(row.Isbn),
+			Jan:       str.NullString(row.Jan),
+			Mpn:       str.NullString(row.Mpn),
+			Nsn:       str.NullString(row.Nsn),
+			Upc:       str.NullString(row.Upc),
+			Qr:        str.NullString(row.Qr),
+			Sku:       str.NullString(row.Sku),
 		})
 	}
-	return
+
+	return itemIdentifiers, hasMore, err
 }
 
-func (s *ItemIdentifiersService) Update(uiip database.UpdateItemIdentifierParams) (*ItemIdentifier, error) {
-	ii, err := s.Db.UpdateItemIdentifier(context.Background(), uiip)
+func (s *ItemIdentifiersService) Update(itemIdentifiersId, accountId uuid.UUID, params *UpdateItemIdentifiersParams) (*ItemIdentifiers, error) {
+	_, err := s.Get(itemIdentifiersId, accountId, &RetrieveItemIdentifiersParams{})
 	if err != nil {
 		return nil, err
 	}
-	return &ItemIdentifier{
-		ID:        ii.ID,
-		CreatedAt: ii.CreatedAt,
-		UpdatedAt: ii.UpdatedAt,
-		Ean:       str.NullString(ii.Ean),
-		Gtin:      str.NullString(ii.Gtin),
-		Isbn:      str.NullString(ii.Isbn),
-		Jan:       str.NullString(ii.Jan),
-		Mpn:       str.NullString(ii.Mpn),
-		Nsn:       str.NullString(ii.Nsn),
-		Upc:       str.NullString(ii.Upc),
-		Qr:        str.NullString(ii.Qr),
-		Sku:       str.NullString(ii.Sku),
-	}, nil
+
+	dbParams := MapUpdateItemIdentifiersParams(itemIdentifiersId, accountId, params)
+
+	row, err := s.Db.UpdateItemIdentifier(context.Background(), dbParams)
+	if err != nil {
+		return nil, err
+	}
+
+	itemIdentifiers := &ItemIdentifiers{
+		ID:        row.ID,
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
+		Ean:       str.NullString(row.Ean),
+		Gtin:      str.NullString(row.Gtin),
+		Isbn:      str.NullString(row.Isbn),
+		Jan:       str.NullString(row.Jan),
+		Mpn:       str.NullString(row.Mpn),
+		Nsn:       str.NullString(row.Nsn),
+		Upc:       str.NullString(row.Upc),
+		Qr:        str.NullString(row.Qr),
+		Sku:       str.NullString(row.Sku),
+	}
+
+	return itemIdentifiers, nil
 }

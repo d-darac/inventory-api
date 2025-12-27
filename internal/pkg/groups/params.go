@@ -12,7 +12,7 @@ type CreateGroupParams struct {
 	Expand      *[]string  `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
-type ListGroupParams struct {
+type ListGroupsParams struct {
 	*database.PaginationParams
 	CreatedAt   *database.TimeRange `json:"created_at" validate:"omitnil"`
 	ParentGroup *uuid.UUID          `json:"parent_group" validate:"omitnil,uuid"`
@@ -32,9 +32,9 @@ type UpdateGroupParams struct {
 	Expand      *[]string  `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
-func NewListGroupParams() *ListGroupParams {
-	limit := int32(int(10))
-	return &ListGroupParams{
+func NewListGroupParams() *ListGroupsParams {
+	limit := int32(10)
+	return &ListGroupsParams{
 		PaginationParams: &database.PaginationParams{
 			Limit: &limit,
 		},

@@ -1,13 +1,12 @@
-package mappers
+package groups
 
 import (
-	"github.com/d-darac/inventory-api/internal/pkg/groups"
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
-func MapCreateGroupParams(accountId uuid.UUID, cp *groups.CreateGroupParams) database.CreateGroupParams {
+func MapCreateGroupParams(accountId uuid.UUID, cp *CreateGroupParams) database.CreateGroupParams {
 	cgp := database.CreateGroupParams{
 		AccountID:   accountId,
 		Description: api.NullString(cp.Description),
@@ -17,7 +16,7 @@ func MapCreateGroupParams(accountId uuid.UUID, cp *groups.CreateGroupParams) dat
 	return cgp
 }
 
-func MapListGroupsParams(accountId uuid.UUID, lp *groups.ListGroupParams) database.ListGroupsParams {
+func MapListGroupsParams(accountId uuid.UUID, lp *ListGroupsParams) database.ListGroupsParams {
 	lgp := database.ListGroupsParams{
 		AccountID:   accountId,
 		Description: api.NullString(lp.Description),
@@ -30,7 +29,7 @@ func MapListGroupsParams(accountId uuid.UUID, lp *groups.ListGroupParams) databa
 	return lgp
 }
 
-func MapUpdateGroupParams(id uuid.UUID, accountId uuid.UUID, up *groups.UpdateGroupParams) database.UpdateGroupParams {
+func MapUpdateGroupParams(id uuid.UUID, accountId uuid.UUID, up *UpdateGroupParams) database.UpdateGroupParams {
 	return database.UpdateGroupParams{
 		AccountID:   accountId,
 		Description: api.NullString(up.Description),

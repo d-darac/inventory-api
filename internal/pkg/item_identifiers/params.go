@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type CreateItemIdentifierParams struct {
+type CreateItemIdentifiersParams struct {
 	Ean    *string   `json:"ean" validate:"omitnil,len=8|gte=12,lte=14"`
 	Gtin   *string   `json:"gtin" validate:"omitnil,len=8|gte=12,lte=14"`
 	Isbn   *string   `json:"isbn" validate:"omitnil,len=10|len=13"`
@@ -25,11 +25,11 @@ type ListItemIdentifiersParams struct {
 	UpdatedAt *database.TimeRange `json:"updated_at" validate:"omitnil"`
 }
 
-type RetrieveItemIdentifierParams struct {
+type RetrieveItemIdentifiersParams struct {
 	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=item"`
 }
 
-type UpdateItemIdentifierParams struct {
+type UpdateItemIdentifiersParams struct {
 	Ean    *string   `json:"ean" validate:"omitnil,len=8|gte=12,lte=14"`
 	Gtin   *string   `json:"gtin" validate:"omitnil,len=8|gte=12,lte=14"`
 	Isbn   *string   `json:"isbn" validate:"omitnil,len=10|len=13"`
@@ -42,7 +42,7 @@ type UpdateItemIdentifierParams struct {
 	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=item"`
 }
 
-func NewListItemIdentifierParams() *ListItemIdentifiersParams {
+func NewListItemIdentifiersParams() *ListItemIdentifiersParams {
 	limit := int32(int(10))
 	return &ListItemIdentifiersParams{
 		PaginationParams: &database.PaginationParams{

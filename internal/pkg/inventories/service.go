@@ -2,8 +2,10 @@ package inventories
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/d-darac/inventory-assets/database"
+	"github.com/google/uuid"
 )
 
 type InventoriesService struct {
@@ -16,77 +18,129 @@ func NewInventoriesService(db *database.Queries) *InventoriesService {
 	}
 }
 
-func (s *InventoriesService) Create(cip database.CreateInventoryParams) (*Inventory, error) {
-	in, err := s.Db.CreateInventory(context.Background(), cip)
+func (s *InventoriesService) Create(accountId uuid.UUID, params *CreateInventoryParams) (*Inventory, error) {
+	dbParams := MapCreateInventoryParams(accountId, params)
+	row, err := s.Db.CreateInventory(context.Background(), dbParams)
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{
-		ID:        in.ID,
-		CreatedAt: in.CreatedAt,
-		UpdatedAt: in.UpdatedAt,
-		InStock:   in.InStock,
-		Orderable: in.Orderable,
-	}, nil
+
+	Inventory := &Inventory{
+		ID:        row.ID,
+		CreatedAt: row.UpdatedAt,
+		UpdatedAt: row.UpdatedAt,
+		InStock:   row.InStock,
+		Orderable: row.Orderable,
+	}
+
+	return Inventory, nil
 }
 
-func (s *InventoriesService) Delete(dip database.DeleteInventoryParams) error {
-	return s.Db.DeleteInventory(context.Background(), dip)
+func (s *InventoriesService) Delete(InventoryId, accountId uuid.UUID) error {
+	_, err := s.Get(InventoryId, accountId, &RetrieveInventoryParams{})
+	if err != nil {
+		return err
+	}
+	return s.Db.DeleteInventory(context.Background(), database.DeleteInventoryParams{
+		ID:        InventoryId,
+		AccountID: accountId,
+	})
 }
 
-func (s *InventoriesService) Get(gip database.GetInventoryParams) (*Inventory, error) {
-	in, err := s.Db.GetInventory(context.Background(), gip)
+func (s *InventoriesService) Get(InventoryId, accountId uuid.UUID, params *RetrieveInventoryParams) (*Inventory, error) {
+	row, err := s.Db.GetInventory(context.Background(), database.GetInventoryParams{
+		ID:        InventoryId,
+		AccountID: accountId,
+	})
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{
-		ID:        in.ID,
-		CreatedAt: in.CreatedAt,
-		UpdatedAt: in.UpdatedAt,
-		InStock:   in.InStock,
-		Orderable: in.Orderable,
-	}, nil
+
+	Inventory := &Inventory{
+		ID:        row.ID,
+		CreatedAt: row.UpdatedAt,
+		UpdatedAt: row.UpdatedAt,
+		InStock:   row.InStock,
+		Orderable: row.Orderable,
+	}
+
+	return Inventory, nil
 }
 
-func (s *InventoriesService) List(lip database.ListInventoriesParams) (inventories []*Inventory, hasMore bool, err error) {
-	ins, err := s.Db.ListInventories(context.Background(), lip)
+func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesParams) (Inventories []*Inventory, hasMore bool, err error) {
+	if params.StartingAfter != nil {
+		Inventory, err := s.Get(*params.StartingAfter, accountId, &RetrieveInventoryParams{})
+		if err != nil {
+			return Inventories, hasMore, err
+		}
+		params.StartingAfterDate = &Inventory.CreatedAt
+	}
+
+	if params.EndingBefore != nil {
+		Inventory, err := s.Get(*params.EndingBefore, accountId, &RetrieveInventoryParams{})
+		if err != nil {
+			return Inventories, hasMore, err
+		}
+		params.EndingBeforeDate = &Inventory.CreatedAt
+	}
+
+	dbParams := MapListInventoriesParams(accountId, params)
+
+	rows, err := s.Db.ListInventories(context.Background(), dbParams)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return Inventories, hasMore, nil
+		}
 		return
 	}
-	if lip.Limit.Valid {
-		hasMore = len(ins) > int(lip.Limit.Int32)
+
+	if dbParams.Limit.Valid {
+		hasMore = len(rows) > int(dbParams.Limit.Int32)
 	} else {
-		hasMore = len(ins) > 10
+		hasMore = len(rows) > 10
 	}
+
 	if hasMore {
-		if lip.EndingBefore.Valid {
-			ins = ins[1:]
+		if dbParams.EndingBefore.Valid {
+			rows = rows[1:]
 		} else {
-			ins = ins[:len(ins)-1]
+			rows = rows[:len(rows)-1]
 		}
 	}
-	for _, i := range ins {
-		inventories = append(inventories, &Inventory{
-			ID:        i.ID,
-			CreatedAt: i.CreatedAt,
-			UpdatedAt: i.UpdatedAt,
-			InStock:   i.InStock,
-			Orderable: i.Orderable,
+
+	for _, row := range rows {
+		Inventories = append(Inventories, &Inventory{
+			ID:        row.ID,
+			CreatedAt: row.UpdatedAt,
+			UpdatedAt: row.UpdatedAt,
+			InStock:   row.InStock,
+			Orderable: row.Orderable,
 		})
 	}
-	return
+
+	return Inventories, hasMore, err
 }
 
-func (s *InventoriesService) Update(uip database.UpdateInventoryParams) (*Inventory, error) {
-	in, err := s.Db.UpdateInventory(context.Background(), uip)
+func (s *InventoriesService) Update(InventoryId, accountId uuid.UUID, params *UpdateInventoryParams) (*Inventory, error) {
+	_, err := s.Get(InventoryId, accountId, &RetrieveInventoryParams{})
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{
-		ID:        in.ID,
-		CreatedAt: in.CreatedAt,
-		UpdatedAt: in.UpdatedAt,
-		InStock:   in.InStock,
-		Orderable: in.Orderable,
-	}, nil
+
+	dbParams := MapUpdateInventoryParams(InventoryId, accountId, params)
+
+	row, err := s.Db.UpdateInventory(context.Background(), dbParams)
+	if err != nil {
+		return nil, err
+	}
+
+	Inventory := &Inventory{
+		ID:        row.ID,
+		CreatedAt: row.UpdatedAt,
+		UpdatedAt: row.UpdatedAt,
+		InStock:   row.InStock,
+		Orderable: row.Orderable,
+	}
+
+	return Inventory, nil
 }
