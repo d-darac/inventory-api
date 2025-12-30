@@ -13,7 +13,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func TestNewListGroupsParams(t *testing.T) {
+func TestUnitNewListGroupsParams(t *testing.T) {
 	lp := NewListGroupsParams()
 	if lp.PaginationParams == nil {
 		t.Fatal("PaginationParams is nil")
@@ -26,7 +26,7 @@ func TestNewListGroupsParams(t *testing.T) {
 	}
 }
 
-func TestMapCreateGroupParams(t *testing.T) {
+func TestUnitMapCreateGroupParams(t *testing.T) {
 	acc := uuid.New()
 	name := "test-group"
 	desc := "description"
@@ -50,7 +50,7 @@ func TestMapCreateGroupParams(t *testing.T) {
 	}
 }
 
-func TestMapListGroupsParams(t *testing.T) {
+func TestUnitMapListGroupsParams(t *testing.T) {
 	acc := uuid.New()
 	lp := NewListGroupsParams()
 	name := "test-group"
@@ -70,7 +70,7 @@ func TestMapListGroupsParams(t *testing.T) {
 	}
 }
 
-func TestMapUpdateGroupParams(t *testing.T) {
+func TestUnitMapUpdateGroupParams(t *testing.T) {
 	id := uuid.New()
 	acc := uuid.New()
 	name := "test-group"
@@ -90,7 +90,7 @@ func TestMapUpdateGroupParams(t *testing.T) {
 	}
 }
 
-func TestCreate(t *testing.T) {
+func TestIntegrationCreate(t *testing.T) {
 	godotenv.Load("../../../.env")
 	dbUrl := os.Getenv("DB_TESTS_URL")
 
@@ -152,7 +152,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
-func TestDelete(t *testing.T) {
+func TestIntegrationDelete(t *testing.T) {
 	godotenv.Load("../../../.env")
 	dbUrl := os.Getenv("DB_TESTS_URL")
 
@@ -207,7 +207,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestList(t *testing.T) {
+func TestIntegrationList(t *testing.T) {
 	godotenv.Load("../../../.env")
 	dbUrl := os.Getenv("DB_TESTS_URL")
 
@@ -281,7 +281,7 @@ func TestList(t *testing.T) {
 	}
 }
 
-func TestRetrieve(t *testing.T) {
+func TestIntegrationRetrieve(t *testing.T) {
 	godotenv.Load("../../../.env")
 	dbUrl := os.Getenv("DB_TESTS_URL")
 
@@ -350,7 +350,7 @@ func TestRetrieve(t *testing.T) {
 	}
 }
 
-func TestUpdate(t *testing.T) {
+func TestIntegrationUpdate(t *testing.T) {
 	godotenv.Load("../../../.env")
 	dbUrl := os.Getenv("DB_TESTS_URL")
 
