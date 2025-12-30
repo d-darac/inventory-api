@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/d-darac/inventory-api/internal/middleware"
 	"github.com/d-darac/inventory-api/internal/router"
@@ -17,7 +18,10 @@ import (
 )
 
 func main() {
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("couldn't load env variables: %v", err)
+	}
+
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
 		log.Fatalf("couldn't convert value of PORT env variable: %v", err)
@@ -69,8 +73,9 @@ func main() {
 	)
 
 	server := &http.Server{
-		Handler: stack(v1.ServeHTTP),
-		Addr:    fmt.Sprintf("%s:%d", apiCfg.Host, apiCfg.Port),
+		Handler:           stack(v1.ServeHTTP),
+		Addr:              fmt.Sprintf("%s:%d", apiCfg.Host, apiCfg.Port),
+		ReadHeaderTimeout: time.Second * 15,
 	}
 
 	log.Printf("server listening on port: %d", apiCfg.Port)
