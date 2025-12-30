@@ -20,6 +20,9 @@ jobs:
         with:
           go-version: "1.25.1"
 
+      - name: Set GOPRIVATE
+        run: export GOPRIVATE=github.com/d-darac/inventory-assets
+
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
@@ -38,6 +41,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.1"
+
+      - name: Set GOPRIVATE
+        run: export GOPRIVATE=github.com/d-darac/inventory-assets
 
       - name: Run unit tests
         run: go test ./... -run Unit -cover
@@ -64,6 +70,9 @@ jobs:
       - name: Install goose
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
+      - name: Set GOPRIVATE
+        run: export GOPRIVATE=github.com/d-darac/inventory-assets
+
       - name: Run Database Migrations
         run: ./scripts/migrateup.sh
 
@@ -82,6 +91,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.1"
+
+      - name: Set GOPRIVATE
+        run: export GOPRIVATE=github.com/d-darac/inventory-assets
 
       - name: Format code
         run: test -z $(go fmt ./...) && echo $?
