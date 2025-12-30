@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
-	"slices"
 
 	"github.com/d-darac/inventory-api/internal/middleware"
 	"github.com/d-darac/inventory-assets/api"
@@ -41,13 +40,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cp.Expand != nil && slices.Contains(*cp.Expand, "parent_group") {
-		id, err := api.ExpandField(&group.ParentGroup, accountId, h.getGroup)
-		if err != nil {
-			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(id, "group"))
-			return
-		}
-	}
 	api.ResJSON(w, http.StatusCreated, group)
 }
 
@@ -178,14 +170,6 @@ func (h *Handler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ep.Expand != nil && slices.Contains(*ep.Expand, "parent_group") {
-		id, err := api.ExpandField(&group.ParentGroup, accountId, h.getGroup)
-		if err != nil {
-			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(id, "group"))
-			return
-		}
-	}
-
 	api.ResJSON(w, http.StatusOK, group)
 }
 
@@ -220,14 +204,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
 		return
-	}
-
-	if up.Expand != nil && slices.Contains(*up.Expand, "parent_group") {
-		id, err := api.ExpandField(&group.ParentGroup, accountId, h.getGroup)
-		if err != nil {
-			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(id, "group"))
-			return
-		}
 	}
 
 	api.ResJSON(w, http.StatusOK, group)
