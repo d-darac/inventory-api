@@ -32,7 +32,7 @@ type UpdateGroupParams struct {
 	Expand      *[]string  `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
-func NewListGroupParams() *ListGroupsParams {
+func NewListGroupsParams() *ListGroupsParams {
 	limit := int32(10)
 	return &ListGroupsParams{
 		PaginationParams: &database.PaginationParams{

@@ -74,7 +74,7 @@ func (h *GroupsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *GroupsHandler) List(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
 	listRes := api.NewListResponse(r)
-	params := groups.NewListGroupParams()
+	params := groups.NewListGroupsParams()
 
 	if errRes := api.JsonDecode(r, params, w); errRes != nil {
 		errRes.ResError(w, http.StatusBadRequest, nil)
