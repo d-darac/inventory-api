@@ -56,6 +56,9 @@ func (s *GroupsService) Get(groupId, accountId uuid.UUID, params *RetrieveGroupP
 		AccountID: accountId,
 	})
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, api.NotFoundMessage(groupId, "group")
+		}
 		return nil, err
 	}
 

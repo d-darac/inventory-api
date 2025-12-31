@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
@@ -36,23 +37,26 @@ func (s *InventoriesService) Create(accountId uuid.UUID, params *CreateInventory
 	return Inventory, nil
 }
 
-func (s *InventoriesService) Delete(InventoryId, accountId uuid.UUID) error {
-	_, err := s.Get(InventoryId, accountId, &RetrieveInventoryParams{})
+func (s *InventoriesService) Delete(inventoryId, accountId uuid.UUID) error {
+	_, err := s.Get(inventoryId, accountId, &RetrieveInventoryParams{})
 	if err != nil {
 		return err
 	}
 	return s.Db.DeleteInventory(context.Background(), database.DeleteInventoryParams{
-		ID:        InventoryId,
+		ID:        inventoryId,
 		AccountID: accountId,
 	})
 }
 
-func (s *InventoriesService) Get(InventoryId, accountId uuid.UUID, params *RetrieveInventoryParams) (*Inventory, error) {
+func (s *InventoriesService) Get(inventoryId, accountId uuid.UUID, params *RetrieveInventoryParams) (*Inventory, error) {
 	row, err := s.Db.GetInventory(context.Background(), database.GetInventoryParams{
-		ID:        InventoryId,
+		ID:        inventoryId,
 		AccountID: accountId,
 	})
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, api.NotFoundMessage(inventoryId, "inventory")
+		}
 		return nil, err
 	}
 
@@ -121,13 +125,13 @@ func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesPa
 	return Inventories, hasMore, err
 }
 
-func (s *InventoriesService) Update(InventoryId, accountId uuid.UUID, params *UpdateInventoryParams) (*Inventory, error) {
-	_, err := s.Get(InventoryId, accountId, &RetrieveInventoryParams{})
+func (s *InventoriesService) Update(inventoryId, accountId uuid.UUID, params *UpdateInventoryParams) (*Inventory, error) {
+	_, err := s.Get(inventoryId, accountId, &RetrieveInventoryParams{})
 	if err != nil {
 		return nil, err
 	}
 
-	dbParams := MapUpdateInventoryParams(InventoryId, accountId, params)
+	dbParams := MapUpdateInventoryParams(inventoryId, accountId, params)
 
 	row, err := s.Db.UpdateInventory(context.Background(), dbParams)
 	if err != nil {

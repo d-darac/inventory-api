@@ -27,27 +27,24 @@ func (h *GroupsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
 	params := &groups.CreateGroupParams{}
 
-	if errRes := api.JsonDecode(r, params, w); errRes != nil {
-		errRes.ResError(w, http.StatusBadRequest, nil)
+	if err := api.JsonDecode(r, params, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
-	if errListRes := h.validator.ValidateRequestParams(params); errListRes != nil {
-		errListRes.ResError(w, http.StatusBadRequest, nil)
+	if errs := h.validator.ValidateRequestParams(params); errs != nil {
+		api.ResErrorList(w, errs)
 		return
 	}
 
 	group, err := h.Groups.Create(accountId, params)
 	if err != nil {
-		api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
+		api.ResError(w, err)
 		return
 	}
 
-	if params.Expand != nil && slices.Contains(*params.Expand, "parent_group") {
-		_, err := api.ExpandField(&group.ParentGroup, group.ParentGroup.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get)
-		if err != nil {
-			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(group.ParentGroup.ID.UUID, "group"))
-		}
+	if ok := h.expandFields(params.Expand, group, accountId, w); !ok {
+		return
 	}
 
 	api.ResJSON(w, http.StatusCreated, group)
@@ -55,16 +52,16 @@ func (h *GroupsHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *GroupsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	groupId, errMsg := api.GetIdFromPath(r)
+	groupId, err := api.GetIdFromPath(r)
 
-	if len(errMsg) > 0 {
-		api.ResError(w, http.StatusBadRequest, errMsg, api.InvalidRequestError, nil, nil)
+	if err != nil {
+		api.ResError(w, err)
 		return
 	}
 
-	err := h.Groups.Delete(accountId, groupId)
+	err = h.Groups.Delete(accountId, groupId)
 	if err != nil {
-		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupId, "group"))
+		api.ResError(w, err)
 		return
 	}
 
@@ -76,19 +73,19 @@ func (h *GroupsHandler) List(w http.ResponseWriter, r *http.Request) {
 	listRes := api.NewListResponse(r)
 	params := groups.NewListGroupsParams()
 
-	if errRes := api.JsonDecode(r, params, w); errRes != nil {
-		errRes.ResError(w, http.StatusBadRequest, nil)
+	if err := api.JsonDecode(r, params, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
-	if errListRes := h.validator.ValidateRequestParams(params); errListRes != nil {
-		errListRes.ResError(w, http.StatusBadRequest, nil)
+	if errs := h.validator.ValidateRequestParams(params); errs != nil {
+		api.ResErrorList(w, errs)
 		return
 	}
 
 	groups, hasMore, err := h.Groups.List(accountId, params)
 	if err != nil {
-		api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
+		api.ResError(w, err)
 		return
 	}
 
@@ -102,35 +99,32 @@ func (h *GroupsHandler) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *GroupsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	groupId, errMsg := api.GetIdFromPath(r)
-	if len(errMsg) > 0 {
-		api.ResError(w, http.StatusBadRequest, errMsg, api.InvalidRequestError, nil, nil)
+	groupId, err := api.GetIdFromPath(r)
+	if err != nil {
+		api.ResError(w, err)
 		return
 	}
 
 	params := &groups.RetrieveGroupParams{}
 
-	if errRes := api.JsonDecode(r, params, w); errRes != nil {
-		errRes.ResError(w, http.StatusBadRequest, nil)
+	if err := api.JsonDecode(r, params, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
-	if errListRes := h.validator.ValidateRequestParams(params); errListRes != nil {
-		errListRes.ResError(w, http.StatusBadRequest, nil)
+	if errs := h.validator.ValidateRequestParams(params); errs != nil {
+		api.ResErrorList(w, errs)
 		return
 	}
 
 	group, err := h.Groups.Get(groupId, accountId, params)
 	if err != nil {
-		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupId, "group"))
+		api.ResError(w, err)
 		return
 	}
 
-	if params.Expand != nil && slices.Contains(*params.Expand, "parent_group") {
-		_, err := api.ExpandField(&group.ParentGroup, group.ParentGroup.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get)
-		if err != nil {
-			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(group.ParentGroup.ID.UUID, "group"))
-		}
+	if ok := h.expandFields(params.Expand, group, accountId, w); !ok {
+		return
 	}
 
 	api.ResJSON(w, http.StatusOK, group)
@@ -138,35 +132,44 @@ func (h *GroupsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 
 func (h *GroupsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	groupId, errMsg := api.GetIdFromPath(r)
-	if len(errMsg) > 0 {
-		api.ResError(w, http.StatusBadRequest, errMsg, api.InvalidRequestError, nil, nil)
+	groupId, err := api.GetIdFromPath(r)
+	if err != nil {
+		api.ResError(w, err)
 		return
 	}
 
 	params := &groups.UpdateGroupParams{}
-	if errRes := api.JsonDecode(r, params, w); errRes != nil {
-		errRes.ResError(w, http.StatusBadRequest, nil)
+
+	if err := api.JsonDecode(r, params, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
-	if errListRes := h.validator.ValidateRequestParams(params); errListRes != nil {
-		errListRes.ResError(w, http.StatusBadRequest, nil)
+	if errs := h.validator.ValidateRequestParams(params); errs != nil {
+		api.ResErrorList(w, errs)
 		return
 	}
 
 	group, err := h.Groups.Update(groupId, accountId, params)
 	if err != nil {
-		api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(groupId, "group"))
+		api.ResError(w, err)
 		return
 	}
 
-	if params.Expand != nil && slices.Contains(*params.Expand, "parent_group") {
-		_, err := api.ExpandField(&group.ParentGroup, group.ParentGroup.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get)
-		if err != nil {
-			api.HandleSqlErrNoRows(err, w, api.NotFoundMessage(group.ParentGroup.ID.UUID, "group"))
-		}
+	if ok := h.expandFields(params.Expand, group, accountId, w); !ok {
+		return
 	}
 
 	api.ResJSON(w, http.StatusOK, group)
+}
+
+func (h *GroupsHandler) expandFields(fields *[]string, group *groups.Group, accountId uuid.UUID, w http.ResponseWriter) bool {
+	if fields != nil && slices.Contains(*fields, "parent_group") {
+		_, err := api.ExpandField(&group.ParentGroup, group.ParentGroup.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get)
+		if err != nil {
+			api.ResError(w, err)
+			return false
+		}
+	}
+	return true
 }

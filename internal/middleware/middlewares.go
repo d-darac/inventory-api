@@ -3,7 +3,6 @@ package middleware
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -65,7 +64,7 @@ func (mw *Middleware) LoggerMw(next http.HandlerFunc) http.HandlerFunc {
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
+			api.ResError(w, api.ApiErrorMessage())
 			return
 		}
 
@@ -98,10 +97,10 @@ func (mw *Middleware) CheckReqBodyLengthMw(next http.HandlerFunc) http.HandlerFu
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			if err.Error() == "http: request body too large" {
-				api.ResError(w, http.StatusBadRequest, api.RequestTooLargeMessage(), api.InvalidRequestError, nil, err)
+				api.ResError(w, api.RequestTooLargeMessage())
 				return
 			}
-			api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
+			api.ResError(w, api.ApiErrorMessage())
 			return
 		}
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
@@ -114,7 +113,7 @@ func (mw *Middleware) RecoveryMw(next http.HandlerFunc) http.HandlerFunc {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("Caught panic: %v\nStack trace:\n%s", err, string(debug.Stack()))
-				api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, nil)
+				api.ResError(w, api.ApiErrorMessage())
 				return
 			}
 		}()
@@ -134,8 +133,8 @@ func (mw *Middleware) CheckRouteAndMethodMw(next http.HandlerFunc) http.HandlerF
 			`^\/v1\/item_identifiers$`:         {"GET", "POST"},
 			`^\/v1\/item_identifiers\/[^\/]+$`: {"DELETE", "GET", "PUT"},
 		}
-		if statusCode, err := validateRoute(r.Method, r.URL.Path, pathsMethods); err != nil {
-			api.ResError(w, statusCode, err.Error(), api.InvalidRequestError, nil, nil)
+		if err := validateRoute(r.Method, r.URL.Path, pathsMethods); err != nil {
+			api.ResError(w, err)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -147,24 +146,36 @@ func (mw *Middleware) ApiKeyAuthMw(next http.HandlerFunc) http.HandlerFunc {
 		apiKeyString, err := auth.GetApiKey(r.Header)
 		if err != nil {
 			msg := cases.Title(language.English).String(err.Error()) + "."
-			api.ResError(w, http.StatusUnauthorized, msg, api.InvalidRequestError, nil, nil)
+			api.ResError(w, api.AppError{
+				Message: msg,
+				Status:  http.StatusUnauthorized,
+				Type:    api.InvalidRequestError,
+			})
 			return
 		}
 
 		secret, err := auth.EncryptApiKeySecret(apiKeyString, mw.Auth.MasterKey, mw.Auth.Iv)
 		if err != nil {
-			api.ResError(w, http.StatusInternalServerError, api.ApiErrorMessage(), api.ApiError, nil, err)
+			api.ResError(w, err)
 			return
 		}
 
 		apiKey, err := mw.Db.GetApiKeyAccAndExp(context.Background(), secret)
 		if err != nil {
-			api.ResError(w, http.StatusNotFound, "Invalid api key.", api.InvalidRequestError, nil, nil)
+			api.ResError(w, api.AppError{
+				Message: "Invalid api key.",
+				Status:  http.StatusUnauthorized,
+				Type:    api.InvalidRequestError,
+			})
 			return
 		}
 
 		if apiKey.ExpiresAt.Valid && time.Now().After(apiKey.ExpiresAt.Time) {
-			api.ResError(w, http.StatusBadRequest, "Api key expired.", api.InvalidRequestError, nil, nil)
+			api.ResError(w, api.AppError{
+				Message: "Invalid api key.",
+				Status:  http.StatusUnauthorized,
+				Type:    api.InvalidRequestError,
+			})
 			return
 		}
 
@@ -175,7 +186,7 @@ func (mw *Middleware) ApiKeyAuthMw(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func validateRoute(reqMethod, reqPath string, pathsMethods map[string][]string) (int, error) {
+func validateRoute(reqMethod, reqPath string, pathsMethods map[string][]string) error {
 	methods := []string{}
 	for kPath, vMethods := range pathsMethods {
 		r := regexp.MustCompile(kPath)
@@ -186,11 +197,11 @@ func validateRoute(reqMethod, reqPath string, pathsMethods map[string][]string) 
 		}
 	}
 	if len(methods) == 0 {
-		return http.StatusNotFound, errors.New(api.RouteUnknownMessage(reqMethod, reqPath))
+		return api.RouteUnknownMessage(reqMethod, reqPath)
 	}
 
 	if !slices.Contains(methods, reqMethod) {
-		return http.StatusMethodNotAllowed, errors.New(api.MethodNotAllowedMessage(reqMethod, reqPath))
+		return api.MethodNotAllowedMessage(reqMethod, reqPath)
 	}
-	return 0, nil
+	return nil
 }

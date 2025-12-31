@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/d-darac/inventory-assets/str"
 	"github.com/google/uuid"
@@ -61,6 +62,9 @@ func (s *ItemIdentifiersService) Get(itemIdentifiersId, accountId uuid.UUID, par
 		AccountID: accountId,
 	})
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, api.NotFoundMessage(itemIdentifiersId, "item identifiers")
+		}
 		return nil, err
 	}
 

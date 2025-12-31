@@ -63,6 +63,9 @@ func (s *ItemsService) Get(itemId, accountId uuid.UUID, params *RetrieveItemPara
 		AccountID: accountId,
 	})
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, api.NotFoundMessage(itemId, "item")
+		}
 		return nil, err
 	}
 
