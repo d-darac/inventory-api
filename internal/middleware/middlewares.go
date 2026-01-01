@@ -84,7 +84,7 @@ func (mw *Middleware) LoggerMw(next http.HandlerFunc) http.HandlerFunc {
 		// TODO implement res body db store
 		// responseBody := wrapped.buf.String()
 		if _, err := io.Copy(w, wrapped.buf); err != nil {
-			log.Printf("Failed to send response: %v", err)
+			log.Printf("[LoggerMw] Failed to send response: %v", err)
 		}
 	})
 }
@@ -110,7 +110,7 @@ func (mw *Middleware) RecoveryMw(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("Caught panic: %v\nStack trace:\n%s", err, string(debug.Stack()))
+				log.Printf("[RecoveryMw] Caught panic: %v\nStack trace:\n%s", err, string(debug.Stack()))
 				api.ResError(w, api.ApiErrorMessage())
 				return
 			}
