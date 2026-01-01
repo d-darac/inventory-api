@@ -14,8 +14,6 @@ import (
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/auth"
 	"github.com/d-darac/inventory-assets/database"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 type ctxKey string
@@ -145,12 +143,7 @@ func (mw *Middleware) ApiKeyAuthMw(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		apiKeyString, err := auth.GetApiKey(r.Header)
 		if err != nil {
-			msg := cases.Title(language.English).String(err.Error()) + "."
-			api.ResError(w, api.AppError{
-				Message: msg,
-				Status:  http.StatusUnauthorized,
-				Type:    api.InvalidRequestError,
-			})
+			api.ResError(w, err)
 			return
 		}
 
@@ -162,7 +155,7 @@ func (mw *Middleware) ApiKeyAuthMw(next http.HandlerFunc) http.HandlerFunc {
 
 		apiKey, err := mw.Db.GetApiKeyAccAndExp(context.Background(), secret)
 		if err != nil {
-			api.ResError(w, api.AppError{
+			api.ResError(w, &api.AppError{
 				Message: "Invalid api key.",
 				Status:  http.StatusUnauthorized,
 				Type:    api.InvalidRequestError,
@@ -171,7 +164,7 @@ func (mw *Middleware) ApiKeyAuthMw(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if apiKey.ExpiresAt.Valid && time.Now().After(apiKey.ExpiresAt.Time) {
-			api.ResError(w, api.AppError{
+			api.ResError(w, &api.AppError{
 				Message: "Invalid api key.",
 				Status:  http.StatusUnauthorized,
 				Type:    api.InvalidRequestError,
