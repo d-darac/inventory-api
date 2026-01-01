@@ -46,7 +46,8 @@ func (h *ItemIdentifiersHandler) Create(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, itemIdentifiers, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, itemIdentifiers, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
@@ -62,8 +63,7 @@ func (h *ItemIdentifiersHandler) Delete(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.ItemIdentifiers.Delete(accountId, itemIdentifiersId)
-	if err != nil {
+	if err = h.ItemIdentifiers.Delete(accountId, itemIdentifiersId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -126,7 +126,8 @@ func (h *ItemIdentifiersHandler) Retrieve(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, itemIdentifiers, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, itemIdentifiers, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
@@ -159,20 +160,19 @@ func (h *ItemIdentifiersHandler) Update(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, itemIdentifiers, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, itemIdentifiers, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
 	api.ResJSON(w, http.StatusOK, itemIdentifiers)
 }
 
-func (h *ItemIdentifiersHandler) expandFields(fields *[]string, itemIdentifiers *itemidentifiers.ItemIdentifiers, accountId uuid.UUID, w http.ResponseWriter) bool {
+func (h *ItemIdentifiersHandler) expandFields(fields *[]string, itemIdentifiers *itemidentifiers.ItemIdentifiers, accountId uuid.UUID, w http.ResponseWriter) error {
 	if fields != nil && slices.Contains(*fields, "item") {
-		_, err := api.ExpandField(&itemIdentifiers.Item, itemIdentifiers.Item.ID.UUID, accountId, &items.RetrieveItemParams{}, h.Items.Get)
-		if err != nil {
-			api.ResError(w, err)
-			return false
+		if _, err := api.ExpandField(&itemIdentifiers.Item, itemIdentifiers.Item.ID.UUID, accountId, &items.RetrieveItemParams{}, h.Items.Get); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }

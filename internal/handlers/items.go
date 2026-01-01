@@ -52,7 +52,8 @@ func (h *ItemsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, item, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, item, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
@@ -68,8 +69,7 @@ func (h *ItemsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Items.Delete(accountId, groupId)
-	if err != nil {
+	if err = h.Items.Delete(accountId, groupId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -132,7 +132,8 @@ func (h *ItemsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, item, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, item, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
@@ -165,34 +166,30 @@ func (h *ItemsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, item, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, item, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
 	api.ResJSON(w, http.StatusOK, item)
 }
 
-func (h *ItemsHandler) expandFields(fields *[]string, item *items.Item, accountId uuid.UUID, w http.ResponseWriter) bool {
+func (h *ItemsHandler) expandFields(fields *[]string, item *items.Item, accountId uuid.UUID, w http.ResponseWriter) error {
 	if fields != nil && slices.Contains(*fields, "group") {
-		_, err := api.ExpandField(&item.Group, item.Group.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get)
-		if err != nil {
-			api.ResError(w, err)
-			return false
+		if _, err := api.ExpandField(&item.Group, item.Group.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get); err != nil {
+			return err
 		}
 	}
 	if fields != nil && slices.Contains(*fields, "inventory") {
-		_, err := api.ExpandField(&item.Inventory, item.Inventory.ID.UUID, accountId, &inventories.RetrieveInventoryParams{}, h.Inventories.Get)
-		if err != nil {
-			api.ResError(w, err)
-			return false
+		if _, err := api.ExpandField(&item.Inventory, item.Inventory.ID.UUID, accountId, &inventories.RetrieveInventoryParams{}, h.Inventories.Get); err != nil {
+			return err
 		}
 	}
 	if fields != nil && slices.Contains(*fields, "item identifiers") {
-		_, err := api.ExpandField(&item.Identifiers, item.Identifiers.ID.UUID, accountId, &itemidentifiers.RetrieveItemIdentifiersParams{}, h.ItemIdentifiers.Get)
-		if err != nil {
-			api.ResError(w, err)
-			return false
+		if _, err := api.ExpandField(&item.Identifiers, item.Identifiers.ID.UUID, accountId, &itemidentifiers.RetrieveItemIdentifiersParams{}, h.ItemIdentifiers.Get); err != nil {
+			return err
 		}
+
 	}
-	return true
+	return nil
 }

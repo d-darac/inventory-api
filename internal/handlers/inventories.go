@@ -46,7 +46,8 @@ func (h *InventoriesHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, inventory, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, inventory, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
@@ -62,8 +63,7 @@ func (h *InventoriesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Inventories.Delete(accountId, inventoryId)
-	if err != nil {
+	if err = h.Inventories.Delete(accountId, inventoryId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -126,7 +126,8 @@ func (h *InventoriesHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, inventory, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, inventory, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
@@ -159,20 +160,19 @@ func (h *InventoriesHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, inventory, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, inventory, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
 	api.ResJSON(w, http.StatusOK, inventory)
 }
 
-func (h *InventoriesHandler) expandFields(fields *[]string, inventory *inventories.Inventory, accountId uuid.UUID, w http.ResponseWriter) bool {
+func (h *InventoriesHandler) expandFields(fields *[]string, inventory *inventories.Inventory, accountId uuid.UUID, w http.ResponseWriter) error {
 	if fields != nil && slices.Contains(*fields, "item") {
-		_, err := api.ExpandField(&inventory.Item, inventory.Item.ID.UUID, accountId, &items.RetrieveItemParams{}, h.Items.Get)
-		if err != nil {
-			api.ResError(w, err)
-			return false
+		if _, err := api.ExpandField(&inventory.Item, inventory.Item.ID.UUID, accountId, &items.RetrieveItemParams{}, h.Items.Get); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }

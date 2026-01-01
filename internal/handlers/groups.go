@@ -43,7 +43,8 @@ func (h *GroupsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, group, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, group, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
@@ -59,8 +60,7 @@ func (h *GroupsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Groups.Delete(accountId, groupId)
-	if err != nil {
+	if err = h.Groups.Delete(accountId, groupId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -123,7 +123,8 @@ func (h *GroupsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, group, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, group, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
@@ -156,20 +157,19 @@ func (h *GroupsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ok := h.expandFields(params.Expand, group, accountId, w); !ok {
+	if err := h.expandFields(params.Expand, group, accountId, w); err != nil {
+		api.ResError(w, err)
 		return
 	}
 
 	api.ResJSON(w, http.StatusOK, group)
 }
 
-func (h *GroupsHandler) expandFields(fields *[]string, group *groups.Group, accountId uuid.UUID, w http.ResponseWriter) bool {
+func (h *GroupsHandler) expandFields(fields *[]string, group *groups.Group, accountId uuid.UUID, w http.ResponseWriter) error {
 	if fields != nil && slices.Contains(*fields, "parent_group") {
-		_, err := api.ExpandField(&group.ParentGroup, group.ParentGroup.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get)
-		if err != nil {
-			api.ResError(w, err)
-			return false
+		if _, err := api.ExpandField(&group.ParentGroup, group.ParentGroup.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }
