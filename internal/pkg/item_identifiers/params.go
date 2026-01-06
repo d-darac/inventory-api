@@ -6,13 +6,13 @@ import (
 )
 
 type CreateItemIdentifiersParams struct {
-	Ean    *string   `json:"ean" validate:"omitnil,len=8|gte=12,lte=14"`
-	Gtin   *string   `json:"gtin" validate:"omitnil,len=8|gte=12,lte=14"`
-	Isbn   *string   `json:"isbn" validate:"omitnil,len=10|len=13"`
-	Jan    *string   `json:"jan" validate:"omitnil,len=8|len=13"`
+	Ean    *string   `json:"ean" validate:"omitnil"`
+	Gtin   *string   `json:"gtin" validate:"omitnil"`
+	Isbn   *string   `json:"isbn" validate:"omitnil"`
+	Jan    *string   `json:"jan" validate:"omitnil"`
 	Mpn    *string   `json:"mpn" validate:"omitnil"`
-	Nsn    *string   `json:"nsn" validate:"omitnil,len=13"`
-	Upc    *string   `json:"upc" validate:"omitnil,len=12"`
+	Nsn    *string   `json:"nsn" validate:"omitnil"`
+	Upc    *string   `json:"upc" validate:"omitnil"`
 	Qr     *string   `json:"qr" validate:"omitnil"`
 	Sku    *string   `json:"sku" validate:"omitnil"`
 	Item   uuid.UUID `json:"item" validate:"required,uuid"`
@@ -30,13 +30,13 @@ type RetrieveItemIdentifiersParams struct {
 }
 
 type UpdateItemIdentifiersParams struct {
-	Ean    *string   `json:"ean" validate:"omitnil,len=8|gte=12,lte=14"`
-	Gtin   *string   `json:"gtin" validate:"omitnil,len=8|gte=12,lte=14"`
-	Isbn   *string   `json:"isbn" validate:"omitnil,len=10|len=13"`
-	Jan    *string   `json:"jan" validate:"omitnil,len=8|len=13"`
+	Ean    *string   `json:"ean" validate:"omitnil"`
+	Gtin   *string   `json:"gtin" validate:"omitnil"`
+	Isbn   *string   `json:"isbn" validate:"omitnil"`
+	Jan    *string   `json:"jan" validate:"omitnil"`
 	Mpn    *string   `json:"mpn" validate:"omitnil"`
-	Nsn    *string   `json:"nsn" validate:"omitnil,len=13"`
-	Upc    *string   `json:"upc" validate:"omitnil,len=12"`
+	Nsn    *string   `json:"nsn" validate:"omitnil"`
+	Upc    *string   `json:"upc" validate:"omitnil"`
 	Qr     *string   `json:"qr" validate:"omitnil"`
 	Sku    *string   `json:"sku" validate:"omitnil"`
 	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=item"`

@@ -46,7 +46,7 @@ func (h *ItemIdentifiersHandler) Create(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.expandFields(params.Expand, itemIdentifiers, accountId, w); err != nil {
+	if err := h.expandFields(params.Expand, itemIdentifiers, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -126,7 +126,7 @@ func (h *ItemIdentifiersHandler) Retrieve(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := h.expandFields(params.Expand, itemIdentifiers, accountId, w); err != nil {
+	if err := h.expandFields(params.Expand, itemIdentifiers, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -160,7 +160,7 @@ func (h *ItemIdentifiersHandler) Update(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.expandFields(params.Expand, itemIdentifiers, accountId, w); err != nil {
+	if err := h.expandFields(params.Expand, itemIdentifiers, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -168,7 +168,7 @@ func (h *ItemIdentifiersHandler) Update(w http.ResponseWriter, r *http.Request) 
 	api.ResJSON(w, http.StatusOK, itemIdentifiers)
 }
 
-func (h *ItemIdentifiersHandler) expandFields(fields *[]string, itemIdentifiers *itemidentifiers.ItemIdentifiers, accountId uuid.UUID, w http.ResponseWriter) error {
+func (h *ItemIdentifiersHandler) expandFields(fields *[]string, itemIdentifiers *itemidentifiers.ItemIdentifiers, accountId uuid.UUID) error {
 	if fields != nil && slices.Contains(*fields, "item") {
 		if _, err := api.ExpandField(&itemIdentifiers.Item, itemIdentifiers.Item.ID.UUID, accountId, &items.RetrieveItemParams{}, h.Items.Get); err != nil {
 			return err
