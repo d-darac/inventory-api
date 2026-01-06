@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DB_TEST_URL: ${{ secrets.DB_TEST_URL }}
+      DB_URL: ${{ secrets.DB_TEST_URL }}
 
     steps:
       - name: Check out code

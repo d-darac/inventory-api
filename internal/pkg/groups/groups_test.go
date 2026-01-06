@@ -92,7 +92,7 @@ func TestUnitMapUpdateGroupParams(t *testing.T) {
 
 func TestIntegrationCreate(t *testing.T) {
 	godotenv.Load("../../../.env")
-	dbUrl := os.Getenv("DB_TEST_URL")
+	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
@@ -154,7 +154,7 @@ func TestIntegrationCreate(t *testing.T) {
 
 func TestIntegrationDelete(t *testing.T) {
 	godotenv.Load("../../../.env")
-	dbUrl := os.Getenv("DB_TEST_URL")
+	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
@@ -209,7 +209,7 @@ func TestIntegrationDelete(t *testing.T) {
 
 func TestIntegrationList(t *testing.T) {
 	godotenv.Load("../../../.env")
-	dbUrl := os.Getenv("DB_TEST_URL")
+	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
@@ -283,7 +283,7 @@ func TestIntegrationList(t *testing.T) {
 
 func TestIntegrationRetrieve(t *testing.T) {
 	godotenv.Load("../../../.env")
-	dbUrl := os.Getenv("DB_TEST_URL")
+	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
@@ -352,7 +352,7 @@ func TestIntegrationRetrieve(t *testing.T) {
 
 func TestIntegrationUpdate(t *testing.T) {
 	godotenv.Load("../../../.env")
-	dbUrl := os.Getenv("DB_TEST_URL")
+	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
