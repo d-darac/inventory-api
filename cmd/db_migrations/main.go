@@ -15,7 +15,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		fmt.Printf("couldn't load env variables: %v\n", err)
+		os.Exit(1)
+	}
+
 	dbUrl := os.Getenv("DB_URL")
 
 	migrations := sql.DbMigrations{
