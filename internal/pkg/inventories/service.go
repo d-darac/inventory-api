@@ -6,6 +6,7 @@ import (
 
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
+	"github.com/d-darac/inventory-assets/ints"
 	"github.com/google/uuid"
 )
 
@@ -31,7 +32,10 @@ func (s *InventoriesService) Create(accountId uuid.UUID, params *CreateInventory
 		CreatedAt: row.UpdatedAt,
 		UpdatedAt: row.UpdatedAt,
 		InStock:   row.InStock,
-		Orderable: row.Orderable,
+		Orderable: ints.NullInt32{
+			Int32: row.Orderable.Int32,
+			Valid: true,
+		},
 	}
 
 	return Inventory, nil
@@ -65,7 +69,10 @@ func (s *InventoriesService) Get(inventoryId, accountId uuid.UUID, params *Retri
 		CreatedAt: row.UpdatedAt,
 		UpdatedAt: row.UpdatedAt,
 		InStock:   row.InStock,
-		Orderable: row.Orderable,
+		Orderable: ints.NullInt32{
+			Int32: row.Orderable.Int32,
+			Valid: true,
+		},
 	}
 
 	return Inventory, nil
@@ -118,7 +125,10 @@ func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesPa
 			CreatedAt: row.UpdatedAt,
 			UpdatedAt: row.UpdatedAt,
 			InStock:   row.InStock,
-			Orderable: row.Orderable,
+			Orderable: ints.NullInt32{
+				Int32: row.Orderable.Int32,
+				Valid: true,
+			},
 		})
 	}
 
@@ -143,7 +153,10 @@ func (s *InventoriesService) Update(inventoryId, accountId uuid.UUID, params *Up
 		CreatedAt: row.UpdatedAt,
 		UpdatedAt: row.UpdatedAt,
 		InStock:   row.InStock,
-		Orderable: row.Orderable,
+		Orderable: ints.NullInt32{
+			Int32: row.Orderable.Int32,
+			Valid: true,
+		},
 	}
 
 	return Inventory, nil

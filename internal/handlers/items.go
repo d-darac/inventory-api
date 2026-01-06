@@ -52,7 +52,7 @@ func (h *ItemsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.expandFields(params.Expand, item, accountId, w); err != nil {
+	if err := h.expandFields(params.Expand, item, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -132,7 +132,7 @@ func (h *ItemsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.expandFields(params.Expand, item, accountId, w); err != nil {
+	if err := h.expandFields(params.Expand, item, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -166,7 +166,7 @@ func (h *ItemsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.expandFields(params.Expand, item, accountId, w); err != nil {
+	if err := h.expandFields(params.Expand, item, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -174,7 +174,7 @@ func (h *ItemsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	api.ResJSON(w, http.StatusOK, item)
 }
 
-func (h *ItemsHandler) expandFields(fields *[]string, item *items.Item, accountId uuid.UUID, w http.ResponseWriter) error {
+func (h *ItemsHandler) expandFields(fields *[]string, item *items.Item, accountId uuid.UUID) error {
 	if fields != nil && slices.Contains(*fields, "group") {
 		if _, err := api.ExpandField(&item.Group, item.Group.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get); err != nil {
 			return err

@@ -46,7 +46,7 @@ func (h *InventoriesHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.expandFields(params.Expand, inventory, accountId, w); err != nil {
+	if err := h.expandFields(params.Expand, inventory, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -97,6 +97,11 @@ func (h *InventoriesHandler) List(w http.ResponseWriter, r *http.Request) {
 		listRes.HasMore = hasMore
 	}
 
+	if err := h.expandFieldsList(params.Expand, inventories, accountId); err != nil {
+		api.ResError(w, err)
+		return
+	}
+
 	api.ResJSON(w, http.StatusOK, listRes)
 }
 
@@ -126,7 +131,7 @@ func (h *InventoriesHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.expandFields(params.Expand, inventory, accountId, w); err != nil {
+	if err := h.expandFields(params.Expand, inventory, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -160,7 +165,7 @@ func (h *InventoriesHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.expandFields(params.Expand, inventory, accountId, w); err != nil {
+	if err := h.expandFields(params.Expand, inventory, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -168,10 +173,30 @@ func (h *InventoriesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	api.ResJSON(w, http.StatusOK, inventory)
 }
 
-func (h *InventoriesHandler) expandFields(fields *[]string, inventory *inventories.Inventory, accountId uuid.UUID, w http.ResponseWriter) error {
-	if fields != nil && slices.Contains(*fields, "item") {
-		if _, err := api.ExpandField(&inventory.Item, inventory.Item.ID.UUID, accountId, &items.RetrieveItemParams{}, h.Items.Get); err != nil {
+func (h *InventoriesHandler) expandFields(fields *[]string, inventory *inventories.Inventory, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(*fields, "items") {
+		iParams := items.NewListItemsParams()
+		iParams.Inventory = &inventory.ID
+		items, hasMore, err := h.Items.List(accountId, iParams)
+		if err != nil {
 			return err
+		}
+		inventory.Items.Data = make([]interface{}, 0)
+		for _, i := range items {
+			inventory.Items.Data = append(inventory.Items.Data, i)
+		}
+		inventory.Items.HasMore = hasMore
+		inventory.Items.Url = "/v1/items"
+	}
+	return nil
+}
+
+func (h *InventoriesHandler) expandFieldsList(fields *[]string, inventories []*inventories.Inventory, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(*fields, "items") {
+		for _, i := range inventories {
+			if err := h.expandFields(&[]string{"items"}, i, accountId); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

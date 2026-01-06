@@ -1,11 +1,12 @@
 package items
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/d-darac/inventory-assets/api"
+	"github.com/d-darac/inventory-assets/currency"
 	"github.com/d-darac/inventory-assets/database"
+	"github.com/d-darac/inventory-assets/ints"
 	"github.com/d-darac/inventory-assets/str"
 	"github.com/google/uuid"
 )
@@ -20,8 +21,8 @@ type Item struct {
 	Identifiers   api.Expandable        `json:"identifiers"`
 	Inventory     api.Expandable        `json:"inventory"`
 	Name          string                `json:"name"`
-	PriceAmount   sql.NullInt32         `json:"price_amount"`
-	PriceCurrency database.NullCurrency `json:"price_currency"`
+	PriceAmount   ints.NullInt32        `json:"price_amount"`
+	PriceCurrency currency.NullCurrency `json:"price_currency"`
 	Variant       bool                  `json:"variant"`
 	Type          database.ItemType     `json:"type"`
 }
