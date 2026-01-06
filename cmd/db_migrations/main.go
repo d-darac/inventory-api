@@ -6,28 +6,23 @@ import (
 	"strconv"
 
 	"github.com/d-darac/inventory-assets/sql"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("usage: cli <action>")
+	if len(os.Args) < 3 {
+		fmt.Println("usage: cli <connection_string> <action>")
 		os.Exit(1)
 	}
 
-	if err := godotenv.Load(); err != nil {
-		fmt.Printf("couldn't load env variables: %v\n", err)
-	}
-
-	dbUrl := os.Getenv("DB_URL")
+	connectionString := os.Args[1]
 
 	migrations := sql.DbMigrations{
-		DbURL: dbUrl,
+		DbURL: connectionString,
 	}
 
-	cmdName := os.Args[1]
+	action := os.Args[2]
 
-	switch cmdName {
+	switch action {
 	case "up":
 		{
 			migrations.Up()
@@ -37,29 +32,33 @@ func main() {
 			migrations.Down()
 		}
 	case "up-to":
-		if len(os.Args) < 3 {
-			fmt.Println("usage: cli up-to <version>")
+		if len(os.Args) < 4 {
+			fmt.Println("missing <version> argument")
+			fmt.Println("usage: cli <connection_string> up-to <version>")
 			os.Exit(1)
 		}
-		cmdVersion := os.Args[2]
-		v, err := strconv.Atoi(cmdVersion)
+		version := os.Args[3]
+		v, err := strconv.Atoi(version)
 		if err != nil {
 			fmt.Println("value of version argument must be numeric")
+			os.Exit(1)
 		}
 		migrations.UpTo(int64(v))
 	case "down-to":
-		if len(os.Args) < 3 {
-			fmt.Println("usage: cli down-to <version>")
+		if len(os.Args) < 4 {
+			fmt.Println("missing <version> argument")
+			fmt.Println("usage: cli <connection_string> down-to <version>")
 			os.Exit(1)
 		}
-		cmdVersion := os.Args[2]
-		v, err := strconv.Atoi(cmdVersion)
+		version := os.Args[3]
+		v, err := strconv.Atoi(version)
 		if err != nil {
 			fmt.Println("value of version argument must be numeric")
+			os.Exit(1)
 		}
 		migrations.DownTo(int64(v))
 	default:
-		fmt.Printf("command not found: %s\n", cmdName)
+		fmt.Printf("command not found: %s\n", action)
 		fmt.Println("available commands:")
 		fmt.Print("- up\n- up-to\n- down\n- down-to\n")
 		os.Exit(1)
