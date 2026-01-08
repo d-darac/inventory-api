@@ -1,11 +1,17 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/d-darac/inventory-api/env"
@@ -21,7 +27,7 @@ func main() {
 
 	port, err := strconv.Atoi(env.PORT)
 	if err != nil {
-		log.Fatalf("couldn't convert value of PORT env variable: %v", err)
+		log.Fatalf("[main] Couldn't convert value of PORT env variable to int: %v", err)
 	}
 
 	apiCfg := api.ApiConfig{
@@ -33,12 +39,12 @@ func main() {
 
 	db, err := sql.Open("postgres", apiCfg.DbURL)
 	if err != nil {
-		log.Fatalf("couldn't open database: %v", err)
+		log.Fatalf("[main] Couldn't open database: %v", err)
 	}
 	defer db.Close()
 
 	if err := db.Ping(); err != nil {
-		log.Fatalf("couldn't connect to database: %v", err)
+		log.Fatalf("[main] Couldn't connect to database: %v", err)
 	}
 
 	apiCfg.Db = database.New(db)
@@ -73,8 +79,43 @@ func main() {
 		Handler:           stack(v1.ServeHTTP),
 		Addr:              fmt.Sprintf("%s:%d", apiCfg.Host, apiCfg.Port),
 		ReadHeaderTimeout: time.Second * 15,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS13,
+		},
 	}
 
-	log.Printf("server listening on port: %d", apiCfg.Port)
-	log.Fatal(server.ListenAndServe())
+	go func() {
+		log.Print("[main] Server starting...")
+		var err error
+		if strings.ToLower(apiCfg.Platform) == "dev" {
+			err = server.ListenAndServe()
+		} else {
+			err = server.ListenAndServeTLS(env.TLS_CERT_PATH, env.TLS_KEY_PATH)
+		}
+		if err != http.ErrServerClosed {
+			log.Printf("[main] Failed to start server: %v.", err)
+		} else {
+			log.Printf("[main] %v.", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	// Graceful shutdown
+	fmt.Println()
+	log.Print("[main] Server stopping...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		fmt.Println()
+		log.Printf("[main] Server forced to shutdown: %v.", err)
+		return
+	}
+
+	log.Print("[main] Server stopped.")
 }
