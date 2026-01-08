@@ -3,7 +3,7 @@ package router
 import (
 	"net/http"
 
-	"github.com/d-darac/inventory-api/internal/handlers"
+	"github.com/d-darac/inventory-api/handlers"
 	"github.com/d-darac/inventory-assets/api"
 )
 

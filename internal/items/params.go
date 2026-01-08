@@ -1,9 +1,9 @@
 package items
 
 import (
-	"github.com/d-darac/inventory-api/internal/pkg/groups"
-	"github.com/d-darac/inventory-api/internal/pkg/inventories"
-	itemidentifiers "github.com/d-darac/inventory-api/internal/pkg/item_identifiers"
+	"github.com/d-darac/inventory-api/internal/groups"
+	"github.com/d-darac/inventory-api/internal/inventories"
+	itemidentifiers "github.com/d-darac/inventory-api/internal/item_identifiers"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
