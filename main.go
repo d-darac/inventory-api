@@ -5,33 +5,30 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
-	"github.com/d-darac/inventory-api/internal/middleware"
-	"github.com/d-darac/inventory-api/internal/router"
+	"github.com/d-darac/inventory-api/env"
+	"github.com/d-darac/inventory-api/middleware"
+	"github.com/d-darac/inventory-api/router"
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("couldn't load env variables: %v", err)
-	}
+	env := env.GetEnv()
 
-	port, err := strconv.Atoi(os.Getenv("PORT"))
+	port, err := strconv.Atoi(env.PORT)
 	if err != nil {
 		log.Fatalf("couldn't convert value of PORT env variable: %v", err)
 	}
 
 	apiCfg := api.ApiConfig{
-		Host:     os.Getenv("HOST"),
+		DbURL:    env.DB_URL,
+		Host:     env.HOST,
+		Platform: env.PLATFORM,
 		Port:     port,
-		DbURL:    os.Getenv("DB_URL"),
-		Platform: os.Getenv("PLATFORM"),
 	}
 
 	db, err := sql.Open("postgres", apiCfg.DbURL)
@@ -59,8 +56,8 @@ func main() {
 			MasterKey string
 			Iv        string
 		}{
-			MasterKey: os.Getenv("MASTER_KEY"),
-			Iv:        os.Getenv("IV"),
+			MasterKey: env.MASTER_KEY,
+			Iv:        env.IV,
 		},
 	}
 

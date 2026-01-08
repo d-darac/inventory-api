@@ -5,25 +5,21 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
+	"github.com/d-darac/inventory-api/env"
 	"github.com/d-darac/inventory-assets/auth"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/d-darac/inventory-assets/str"
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	if err := godotenv.Load("../../.env"); err != nil {
-		log.Fatalf("couldn't load env variables: %v", err)
-	}
-
-	dbUrl := os.Getenv("DB_URL")
-	platform := os.Getenv("PLATFORM")
+	env := env.GetEnv()
+	dbUrl := env.DB_URL
+	platform := env.PLATFORM
 
 	if strings.ToLower(platform) != "dev" {
 		log.Fatalf("this should only be run in dev environment")
@@ -74,8 +70,8 @@ func main() {
 	}
 
 	apiKey := auth.GenApiKey(32)
-	key := "thisIsTheKeyThatShouldBeKeptSafe"
-	iv := "wellThisHereIsIv"
+	key := env.MASTER_KEY
+	iv := env.IV
 
 	encryptedApiKey, err := auth.EncryptApiKeySecret(apiKey, key, iv)
 	if err != nil {
