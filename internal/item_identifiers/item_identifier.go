@@ -9,9 +9,9 @@ import (
 )
 
 type ItemIdentifiers struct {
-	ID        uuid.UUID      `json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	ID        *uuid.UUID     `json:"id,omitempty"`
+	CreatedAt *time.Time     `json:"created_at,omitempty"`
+	UpdatedAt *time.Time     `json:"updated_at,omitempty"`
 	Ean       str.NullString `json:"ean"`
 	Gtin      str.NullString `json:"gtin"`
 	Isbn      str.NullString `json:"isbn"`

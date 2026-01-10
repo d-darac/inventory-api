@@ -12,9 +12,9 @@ import (
 )
 
 type Item struct {
-	ID            uuid.UUID             `json:"id"`
-	CreatedAt     time.Time             `json:"created_at"`
-	UpdatedAt     time.Time             `json:"updated_at"`
+	ID            *uuid.UUID            `json:"id,omitempty"`
+	CreatedAt     *time.Time            `json:"created_at,omitempty"`
+	UpdatedAt     *time.Time            `json:"updated_at,omitempty"`
 	Active        bool                  `json:"active"`
 	Description   str.NullString        `json:"description"`
 	Group         api.Expandable        `json:"group"`
