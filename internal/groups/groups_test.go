@@ -139,7 +139,7 @@ func TestIntegrationCreate(t *testing.T) {
 		t.Fatalf("expected description %s, got %s", desc, group.Description.String)
 	}
 
-	row, err := q.GetGroup(context.Background(), database.GetGroupParams{ID: group.ID, AccountID: acc.ID})
+	row, err := q.GetGroup(context.Background(), database.GetGroupParams{ID: *group.ID, AccountID: acc.ID})
 	if err != nil {
 		t.Fatalf("error retrieving group: %v", err)
 	}
@@ -325,7 +325,7 @@ func TestIntegrationRetrieve(t *testing.T) {
 		t.Fatalf("couldn't create test group: %v", err)
 	}
 
-	group, err := s.Get(grp.ID, acc.ID, &RetrieveGroupParams{})
+	group, err := s.Get(grp.ID, acc.ID, &RetrieveGroupParams{}, false)
 	if err != nil {
 		t.Fatalf("couldn't get test group: %v", err)
 	}
