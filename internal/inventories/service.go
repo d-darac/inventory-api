@@ -27,10 +27,10 @@ func (s *InventoriesService) Create(accountId uuid.UUID, params *CreateInventory
 		return nil, err
 	}
 
-	Inventory := &Inventory{
-		ID:        row.ID,
-		CreatedAt: row.UpdatedAt,
-		UpdatedAt: row.UpdatedAt,
+	inventory := &Inventory{
+		ID:        &row.ID,
+		CreatedAt: &row.CreatedAt,
+		UpdatedAt: &row.UpdatedAt,
 		InStock:   row.InStock,
 		Orderable: ints.NullInt32{
 			Int32: row.Orderable.Int32,
@@ -38,11 +38,11 @@ func (s *InventoriesService) Create(accountId uuid.UUID, params *CreateInventory
 		},
 	}
 
-	return Inventory, nil
+	return inventory, nil
 }
 
 func (s *InventoriesService) Delete(inventoryId, accountId uuid.UUID) error {
-	_, err := s.Get(inventoryId, accountId, &RetrieveInventoryParams{})
+	_, err := s.Get(inventoryId, accountId, &RetrieveInventoryParams{}, true)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (s *InventoriesService) Delete(inventoryId, accountId uuid.UUID) error {
 	})
 }
 
-func (s *InventoriesService) Get(inventoryId, accountId uuid.UUID, params *RetrieveInventoryParams) (*Inventory, error) {
+func (s *InventoriesService) Get(inventoryId, accountId uuid.UUID, params *RetrieveInventoryParams, omitBase bool) (*Inventory, error) {
 	row, err := s.Db.GetInventory(context.Background(), database.GetInventoryParams{
 		ID:        inventoryId,
 		AccountID: accountId,
@@ -64,35 +64,38 @@ func (s *InventoriesService) Get(inventoryId, accountId uuid.UUID, params *Retri
 		return nil, err
 	}
 
-	Inventory := &Inventory{
-		ID:        row.ID,
-		CreatedAt: row.UpdatedAt,
-		UpdatedAt: row.UpdatedAt,
-		InStock:   row.InStock,
+	inventory := &Inventory{
+		InStock: row.InStock,
 		Orderable: ints.NullInt32{
 			Int32: row.Orderable.Int32,
 			Valid: true,
 		},
 	}
 
-	return Inventory, nil
+	if !omitBase {
+		inventory.ID = &row.ID
+		inventory.CreatedAt = &row.CreatedAt
+		inventory.UpdatedAt = &row.UpdatedAt
+	}
+
+	return inventory, nil
 }
 
-func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesParams) (Inventories []*Inventory, hasMore bool, err error) {
+func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesParams) (inventories []*Inventory, hasMore bool, err error) {
 	if params.StartingAfter != nil {
-		Inventory, err := s.Get(*params.StartingAfter, accountId, &RetrieveInventoryParams{})
+		Inventory, err := s.Get(*params.StartingAfter, accountId, &RetrieveInventoryParams{}, false)
 		if err != nil {
-			return Inventories, hasMore, err
+			return inventories, hasMore, err
 		}
-		params.StartingAfterDate = &Inventory.CreatedAt
+		params.StartingAfterDate = Inventory.CreatedAt
 	}
 
 	if params.EndingBefore != nil {
-		Inventory, err := s.Get(*params.EndingBefore, accountId, &RetrieveInventoryParams{})
+		Inventory, err := s.Get(*params.EndingBefore, accountId, &RetrieveInventoryParams{}, false)
 		if err != nil {
-			return Inventories, hasMore, err
+			return inventories, hasMore, err
 		}
-		params.EndingBeforeDate = &Inventory.CreatedAt
+		params.EndingBeforeDate = Inventory.CreatedAt
 	}
 
 	dbParams := MapListInventoriesParams(accountId, params)
@@ -100,7 +103,7 @@ func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesPa
 	rows, err := s.Db.ListInventories(context.Background(), dbParams)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return Inventories, hasMore, nil
+			return inventories, hasMore, nil
 		}
 		return
 	}
@@ -120,10 +123,10 @@ func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesPa
 	}
 
 	for _, row := range rows {
-		Inventories = append(Inventories, &Inventory{
-			ID:        row.ID,
-			CreatedAt: row.UpdatedAt,
-			UpdatedAt: row.UpdatedAt,
+		inventories = append(inventories, &Inventory{
+			ID:        &row.ID,
+			CreatedAt: &row.CreatedAt,
+			UpdatedAt: &row.UpdatedAt,
 			InStock:   row.InStock,
 			Orderable: ints.NullInt32{
 				Int32: row.Orderable.Int32,
@@ -132,11 +135,11 @@ func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesPa
 		})
 	}
 
-	return Inventories, hasMore, err
+	return inventories, hasMore, err
 }
 
 func (s *InventoriesService) Update(inventoryId, accountId uuid.UUID, params *UpdateInventoryParams) (*Inventory, error) {
-	_, err := s.Get(inventoryId, accountId, &RetrieveInventoryParams{})
+	_, err := s.Get(inventoryId, accountId, &RetrieveInventoryParams{}, true)
 	if err != nil {
 		return nil, err
 	}
@@ -148,10 +151,10 @@ func (s *InventoriesService) Update(inventoryId, accountId uuid.UUID, params *Up
 		return nil, err
 	}
 
-	Inventory := &Inventory{
-		ID:        row.ID,
-		CreatedAt: row.UpdatedAt,
-		UpdatedAt: row.UpdatedAt,
+	inventory := &Inventory{
+		ID:        &row.ID,
+		CreatedAt: &row.CreatedAt,
+		UpdatedAt: &row.UpdatedAt,
 		InStock:   row.InStock,
 		Orderable: ints.NullInt32{
 			Int32: row.Orderable.Int32,
@@ -159,5 +162,5 @@ func (s *InventoriesService) Update(inventoryId, accountId uuid.UUID, params *Up
 		},
 	}
 
-	return Inventory, nil
+	return inventory, nil
 }

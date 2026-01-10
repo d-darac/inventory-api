@@ -28,9 +28,9 @@ func (s *ItemIdentifiersService) Create(accountId uuid.UUID, params *CreateItemI
 	}
 
 	itemIdentifiers := &ItemIdentifiers{
-		ID:        row.ID,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
+		ID:        &row.ID,
+		CreatedAt: &row.CreatedAt,
+		UpdatedAt: &row.UpdatedAt,
 		Ean:       str.NullString(row.Ean),
 		Gtin:      str.NullString(row.Gtin),
 		Isbn:      str.NullString(row.Isbn),
@@ -46,7 +46,7 @@ func (s *ItemIdentifiersService) Create(accountId uuid.UUID, params *CreateItemI
 }
 
 func (s *ItemIdentifiersService) Delete(itemIdentifiersId, accountId uuid.UUID) error {
-	_, err := s.Get(itemIdentifiersId, accountId, &RetrieveItemIdentifiersParams{})
+	_, err := s.Get(itemIdentifiersId, accountId, &RetrieveItemIdentifiersParams{}, true)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (s *ItemIdentifiersService) Delete(itemIdentifiersId, accountId uuid.UUID) 
 	})
 }
 
-func (s *ItemIdentifiersService) Get(itemIdentifiersId, accountId uuid.UUID, params *RetrieveItemIdentifiersParams) (*ItemIdentifiers, error) {
+func (s *ItemIdentifiersService) Get(itemIdentifiersId, accountId uuid.UUID, params *RetrieveItemIdentifiersParams, omitBase bool) (*ItemIdentifiers, error) {
 	row, err := s.Db.GetItemIdentifier(context.Background(), database.GetItemIdentifierParams{
 		ID:        itemIdentifiersId,
 		AccountID: accountId,
@@ -69,38 +69,40 @@ func (s *ItemIdentifiersService) Get(itemIdentifiersId, accountId uuid.UUID, par
 	}
 
 	itemIdentifiers := &ItemIdentifiers{
-		ID:        row.ID,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
-		Ean:       str.NullString(row.Ean),
-		Gtin:      str.NullString(row.Gtin),
-		Isbn:      str.NullString(row.Isbn),
-		Jan:       str.NullString(row.Jan),
-		Mpn:       str.NullString(row.Mpn),
-		Nsn:       str.NullString(row.Nsn),
-		Upc:       str.NullString(row.Upc),
-		Qr:        str.NullString(row.Qr),
-		Sku:       str.NullString(row.Sku),
+		Ean:  str.NullString(row.Ean),
+		Gtin: str.NullString(row.Gtin),
+		Isbn: str.NullString(row.Isbn),
+		Jan:  str.NullString(row.Jan),
+		Mpn:  str.NullString(row.Mpn),
+		Nsn:  str.NullString(row.Nsn),
+		Upc:  str.NullString(row.Upc),
+		Qr:   str.NullString(row.Qr),
+		Sku:  str.NullString(row.Sku),
 	}
 
+	if !omitBase {
+		itemIdentifiers.ID = &row.ID
+		itemIdentifiers.CreatedAt = &row.CreatedAt
+		itemIdentifiers.UpdatedAt = &row.UpdatedAt
+	}
 	return itemIdentifiers, nil
 }
 
 func (s *ItemIdentifiersService) List(accountId uuid.UUID, params *ListItemIdentifiersParams) (itemIdentifiers []*ItemIdentifiers, hasMore bool, err error) {
 	if params.StartingAfter != nil {
-		iis, err := s.Get(*params.StartingAfter, accountId, &RetrieveItemIdentifiersParams{})
+		iis, err := s.Get(*params.StartingAfter, accountId, &RetrieveItemIdentifiersParams{}, false)
 		if err != nil {
 			return itemIdentifiers, hasMore, err
 		}
-		params.StartingAfterDate = &iis.CreatedAt
+		params.StartingAfterDate = iis.CreatedAt
 	}
 
 	if params.EndingBefore != nil {
-		iis, err := s.Get(*params.EndingBefore, accountId, &RetrieveItemIdentifiersParams{})
+		iis, err := s.Get(*params.EndingBefore, accountId, &RetrieveItemIdentifiersParams{}, false)
 		if err != nil {
 			return itemIdentifiers, hasMore, err
 		}
-		params.EndingBeforeDate = &iis.CreatedAt
+		params.EndingBeforeDate = iis.CreatedAt
 	}
 
 	dbParams := MapListItemIdentifiersParams(accountId, params)
@@ -129,9 +131,9 @@ func (s *ItemIdentifiersService) List(accountId uuid.UUID, params *ListItemIdent
 
 	for _, row := range rows {
 		itemIdentifiers = append(itemIdentifiers, &ItemIdentifiers{
-			ID:        row.ID,
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
+			ID:        &row.ID,
+			CreatedAt: &row.CreatedAt,
+			UpdatedAt: &row.UpdatedAt,
 			Ean:       str.NullString(row.Ean),
 			Gtin:      str.NullString(row.Gtin),
 			Isbn:      str.NullString(row.Isbn),
@@ -148,7 +150,7 @@ func (s *ItemIdentifiersService) List(accountId uuid.UUID, params *ListItemIdent
 }
 
 func (s *ItemIdentifiersService) Update(itemIdentifiersId, accountId uuid.UUID, params *UpdateItemIdentifiersParams) (*ItemIdentifiers, error) {
-	_, err := s.Get(itemIdentifiersId, accountId, &RetrieveItemIdentifiersParams{})
+	_, err := s.Get(itemIdentifiersId, accountId, &RetrieveItemIdentifiersParams{}, true)
 	if err != nil {
 		return nil, err
 	}
@@ -161,9 +163,9 @@ func (s *ItemIdentifiersService) Update(itemIdentifiersId, accountId uuid.UUID, 
 	}
 
 	itemIdentifiers := &ItemIdentifiers{
-		ID:        row.ID,
-		CreatedAt: row.CreatedAt,
-		UpdatedAt: row.UpdatedAt,
+		ID:        &row.ID,
+		CreatedAt: &row.CreatedAt,
+		UpdatedAt: &row.UpdatedAt,
 		Ean:       str.NullString(row.Ean),
 		Gtin:      str.NullString(row.Gtin),
 		Isbn:      str.NullString(row.Isbn),

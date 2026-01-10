@@ -28,9 +28,9 @@ func (s *GroupsService) Create(accountId uuid.UUID, params *CreateGroupParams) (
 	}
 
 	group := &Group{
-		ID:          row.ID,
-		CreatedAt:   row.UpdatedAt,
-		UpdatedAt:   row.UpdatedAt,
+		ID:          &row.ID,
+		CreatedAt:   &row.CreatedAt,
+		UpdatedAt:   &row.UpdatedAt,
 		Description: str.NullString(row.Description),
 		Name:        row.Name,
 		ParentGroup: api.Expandable{ID: row.ParentGroup},
@@ -40,7 +40,7 @@ func (s *GroupsService) Create(accountId uuid.UUID, params *CreateGroupParams) (
 }
 
 func (s *GroupsService) Delete(groupId, accountId uuid.UUID) error {
-	_, err := s.Get(groupId, accountId, &RetrieveGroupParams{})
+	_, err := s.Get(groupId, accountId, &RetrieveGroupParams{}, true)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (s *GroupsService) Delete(groupId, accountId uuid.UUID) error {
 	})
 }
 
-func (s *GroupsService) Get(groupId, accountId uuid.UUID, params *RetrieveGroupParams) (*Group, error) {
+func (s *GroupsService) Get(groupId, accountId uuid.UUID, params *RetrieveGroupParams, omitBase bool) (*Group, error) {
 	row, err := s.Db.GetGroup(context.Background(), database.GetGroupParams{
 		ID:        groupId,
 		AccountID: accountId,
@@ -63,12 +63,15 @@ func (s *GroupsService) Get(groupId, accountId uuid.UUID, params *RetrieveGroupP
 	}
 
 	group := &Group{
-		ID:          row.ID,
-		CreatedAt:   row.CreatedAt,
-		UpdatedAt:   row.UpdatedAt,
 		Description: str.NullString(row.Description),
 		Name:        row.Name,
 		ParentGroup: api.Expandable{ID: row.ParentGroup},
+	}
+
+	if !omitBase {
+		group.ID = &row.ID
+		group.CreatedAt = &row.CreatedAt
+		group.UpdatedAt = &row.UpdatedAt
 	}
 
 	return group, nil
@@ -76,19 +79,19 @@ func (s *GroupsService) Get(groupId, accountId uuid.UUID, params *RetrieveGroupP
 
 func (s *GroupsService) List(accountId uuid.UUID, params *ListGroupsParams) (groups []*Group, hasMore bool, err error) {
 	if params.StartingAfter != nil {
-		group, err := s.Get(*params.StartingAfter, accountId, &RetrieveGroupParams{})
+		group, err := s.Get(*params.StartingAfter, accountId, &RetrieveGroupParams{}, false)
 		if err != nil {
 			return groups, hasMore, err
 		}
-		params.StartingAfterDate = &group.CreatedAt
+		params.StartingAfterDate = group.CreatedAt
 	}
 
 	if params.EndingBefore != nil {
-		group, err := s.Get(*params.EndingBefore, accountId, &RetrieveGroupParams{})
+		group, err := s.Get(*params.EndingBefore, accountId, &RetrieveGroupParams{}, false)
 		if err != nil {
 			return groups, hasMore, err
 		}
-		params.EndingBeforeDate = &group.CreatedAt
+		params.EndingBeforeDate = group.CreatedAt
 	}
 
 	dbParams := MapListGroupsParams(accountId, params)
@@ -117,9 +120,9 @@ func (s *GroupsService) List(accountId uuid.UUID, params *ListGroupsParams) (gro
 
 	for _, row := range rows {
 		groups = append(groups, &Group{
-			ID:          row.ID,
-			CreatedAt:   row.CreatedAt,
-			UpdatedAt:   row.UpdatedAt,
+			ID:          &row.ID,
+			CreatedAt:   &row.CreatedAt,
+			UpdatedAt:   &row.UpdatedAt,
 			Description: str.NullString(row.Description),
 			Name:        row.Name,
 			ParentGroup: api.Expandable{ID: row.ParentGroup},
@@ -130,7 +133,7 @@ func (s *GroupsService) List(accountId uuid.UUID, params *ListGroupsParams) (gro
 }
 
 func (s *GroupsService) Update(groupId, accountId uuid.UUID, params *UpdateGroupParams) (*Group, error) {
-	_, err := s.Get(groupId, accountId, &RetrieveGroupParams{})
+	_, err := s.Get(groupId, accountId, &RetrieveGroupParams{}, true)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +146,9 @@ func (s *GroupsService) Update(groupId, accountId uuid.UUID, params *UpdateGroup
 	}
 
 	group := &Group{
-		ID:          row.ID,
-		CreatedAt:   row.CreatedAt,
-		UpdatedAt:   row.UpdatedAt,
+		ID:          &row.ID,
+		CreatedAt:   &row.CreatedAt,
+		UpdatedAt:   &row.UpdatedAt,
 		Description: str.NullString(row.Description),
 		Name:        row.Name,
 		ParentGroup: api.Expandable{ID: row.ParentGroup},

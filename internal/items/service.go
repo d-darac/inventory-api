@@ -30,9 +30,9 @@ func (s *ItemsService) Create(accountId uuid.UUID, params *CreateItemParams) (*I
 	}
 
 	item := &Item{
-		ID:          row.ID,
-		CreatedAt:   row.CreatedAt,
-		UpdatedAt:   row.UpdatedAt,
+		ID:          &row.ID,
+		CreatedAt:   &row.CreatedAt,
+		UpdatedAt:   &row.UpdatedAt,
 		Active:      row.Active,
 		Description: str.NullString(row.Description),
 		Group:       api.Expandable{ID: row.Group},
@@ -55,7 +55,7 @@ func (s *ItemsService) Create(accountId uuid.UUID, params *CreateItemParams) (*I
 }
 
 func (s *ItemsService) Delete(itemId, accountId uuid.UUID) error {
-	_, err := s.Get(itemId, accountId, &RetrieveItemParams{})
+	_, err := s.Get(itemId, accountId, &RetrieveItemParams{}, true)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (s *ItemsService) Delete(itemId, accountId uuid.UUID) error {
 	})
 }
 
-func (s *ItemsService) Get(itemId, accountId uuid.UUID, params *RetrieveItemParams) (*Item, error) {
+func (s *ItemsService) Get(itemId, accountId uuid.UUID, params *RetrieveItemParams, omitBase bool) (*Item, error) {
 	row, err := s.Db.GetItem(context.Background(), database.GetItemParams{
 		ID:        itemId,
 		AccountID: accountId,
@@ -78,9 +78,6 @@ func (s *ItemsService) Get(itemId, accountId uuid.UUID, params *RetrieveItemPara
 	}
 
 	item := &Item{
-		ID:          row.ID,
-		CreatedAt:   row.CreatedAt,
-		UpdatedAt:   row.UpdatedAt,
 		Active:      row.Active,
 		Description: str.NullString(row.Description),
 		Group:       api.Expandable{ID: row.Group},
@@ -99,24 +96,29 @@ func (s *ItemsService) Get(itemId, accountId uuid.UUID, params *RetrieveItemPara
 		Type:    row.Type,
 	}
 
+	if !omitBase {
+		item.ID = &row.ID
+		item.CreatedAt = &row.CreatedAt
+		item.UpdatedAt = &row.UpdatedAt
+	}
 	return item, nil
 }
 
 func (s *ItemsService) List(accountId uuid.UUID, params *ListItemsParams) (items []*Item, hasMore bool, err error) {
 	if params.StartingAfter != nil {
-		item, err := s.Get(*params.StartingAfter, accountId, &RetrieveItemParams{})
+		item, err := s.Get(*params.StartingAfter, accountId, &RetrieveItemParams{}, false)
 		if err != nil {
 			return items, hasMore, err
 		}
-		params.StartingAfterDate = &item.CreatedAt
+		params.StartingAfterDate = item.CreatedAt
 	}
 
 	if params.EndingBefore != nil {
-		item, err := s.Get(*params.EndingBefore, accountId, &RetrieveItemParams{})
+		item, err := s.Get(*params.EndingBefore, accountId, &RetrieveItemParams{}, false)
 		if err != nil {
 			return items, hasMore, err
 		}
-		params.EndingBeforeDate = &item.CreatedAt
+		params.EndingBeforeDate = item.CreatedAt
 	}
 
 	dbParams := MapListItemsParams(accountId, params)
@@ -145,9 +147,9 @@ func (s *ItemsService) List(accountId uuid.UUID, params *ListItemsParams) (items
 
 	for _, row := range rows {
 		items = append(items, &Item{
-			ID:          row.ID,
-			CreatedAt:   row.CreatedAt,
-			UpdatedAt:   row.UpdatedAt,
+			ID:          &row.ID,
+			CreatedAt:   &row.CreatedAt,
+			UpdatedAt:   &row.UpdatedAt,
 			Active:      row.Active,
 			Description: str.NullString(row.Description),
 			Group:       api.Expandable{ID: row.Group},
@@ -171,7 +173,7 @@ func (s *ItemsService) List(accountId uuid.UUID, params *ListItemsParams) (items
 }
 
 func (s *ItemsService) Update(itemId, accountId uuid.UUID, params *UpdateItemParams) (*Item, error) {
-	_, err := s.Get(itemId, accountId, &RetrieveItemParams{})
+	_, err := s.Get(itemId, accountId, &RetrieveItemParams{}, true)
 	if err != nil {
 		return nil, err
 	}
@@ -184,9 +186,9 @@ func (s *ItemsService) Update(itemId, accountId uuid.UUID, params *UpdateItemPar
 	}
 
 	item := &Item{
-		ID:          row.ID,
-		CreatedAt:   row.CreatedAt,
-		UpdatedAt:   row.UpdatedAt,
+		ID:          &row.ID,
+		CreatedAt:   &row.CreatedAt,
+		UpdatedAt:   &row.UpdatedAt,
 		Active:      row.Active,
 		Description: str.NullString(row.Description),
 		Group:       api.Expandable{ID: row.Group},
