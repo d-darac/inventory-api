@@ -35,6 +35,7 @@ type ListItemsParams struct {
 	Type          *database.ItemType  `json:"type" validate:"omitnil,itemtype"`
 	UpdatedAt     *database.TimeRange `json:"updated_at" validate:"omitnil"`
 	Variant       *bool               `json:"variant" validate:"omitnil"`
+	Expand        *[]string           `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
 }
 
 type RetrieveItemParams struct {
@@ -53,7 +54,7 @@ type UpdateItemParams struct {
 }
 
 func NewListItemsParams() *ListItemsParams {
-	limit := int32(int(10))
+	limit := int32(10)
 	return &ListItemsParams{
 		PaginationParams: &database.PaginationParams{
 			Limit: &limit,
