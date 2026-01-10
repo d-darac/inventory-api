@@ -19,6 +19,7 @@ type ListGroupsParams struct {
 	Description *string             `json:"description" validate:"omitnil"`
 	Name        *string             `json:"name" validate:"omitnil"`
 	UpdatedAt   *database.TimeRange `json:"updated_at" validate:"omitnil"`
+	Expand      *[]string           `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
 type RetrieveGroupParams struct {
