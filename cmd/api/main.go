@@ -39,12 +39,11 @@ func main() {
 
 	db, err := sql.Open("postgres", apiCfg.DbURL)
 	if err != nil {
-		log.Fatalf("[main] Couldn't open database: %v", err)
+		log.Fatalf("[main] Couldn't open database connection: %v", err)
 	}
 	defer db.Close()
-
 	if err := db.Ping(); err != nil {
-		log.Fatalf("[main] Couldn't connect to database: %v", err)
+		log.Fatalf("[main] Couldn't ping to database: %v", err)
 	}
 
 	apiCfg.Db = database.New(db)
