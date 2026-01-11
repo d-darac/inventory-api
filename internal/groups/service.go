@@ -14,14 +14,42 @@ type GroupsService struct {
 	Db *database.Queries
 }
 
+type Create struct {
+	AccountId     uuid.UUID
+	RequestParams CreateGroupParams
+}
+
+type Delete struct {
+	AccountId uuid.UUID
+	GroupId   uuid.UUID
+}
+
+type Get struct {
+	AccountId     uuid.UUID
+	GroupId       uuid.UUID
+	RequestParams RetrieveGroupParams
+	OmitBase      bool
+}
+
+type List struct {
+	AccountId     uuid.UUID
+	RequestParams ListGroupsParams
+}
+
+type Update struct {
+	AccountId     uuid.UUID
+	GroupId       uuid.UUID
+	RequestParams UpdateGroupParams
+}
+
 func NewGroupsService(db *database.Queries) *GroupsService {
 	return &GroupsService{
 		Db: db,
 	}
 }
 
-func (s *GroupsService) Create(accountId uuid.UUID, params *CreateGroupParams) (*Group, error) {
-	dbParams := MapCreateGroupParams(accountId, params)
+func (s *GroupsService) Create(create Create) (*Group, error) {
+	dbParams := MapCreateGroupParams(create)
 	row, err := s.Db.CreateGroup(context.Background(), dbParams)
 	if err != nil {
 		return nil, err
@@ -39,25 +67,30 @@ func (s *GroupsService) Create(accountId uuid.UUID, params *CreateGroupParams) (
 	return group, nil
 }
 
-func (s *GroupsService) Delete(groupId, accountId uuid.UUID) error {
-	_, err := s.Get(groupId, accountId, &RetrieveGroupParams{}, true)
+func (s *GroupsService) Delete(delete Delete) error {
+	_, err := s.Get(Get{
+		AccountId:     delete.AccountId,
+		GroupId:       delete.GroupId,
+		RequestParams: RetrieveGroupParams{},
+		OmitBase:      true,
+	})
 	if err != nil {
 		return err
 	}
 	return s.Db.DeleteGroup(context.Background(), database.DeleteGroupParams{
-		ID:        groupId,
-		AccountID: accountId,
+		ID:        delete.GroupId,
+		AccountID: delete.AccountId,
 	})
 }
 
-func (s *GroupsService) Get(groupId, accountId uuid.UUID, params *RetrieveGroupParams, omitBase bool) (*Group, error) {
+func (s *GroupsService) Get(get Get) (*Group, error) {
 	row, err := s.Db.GetGroup(context.Background(), database.GetGroupParams{
-		ID:        groupId,
-		AccountID: accountId,
+		ID:        get.GroupId,
+		AccountID: get.AccountId,
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, api.NotFoundMessage(groupId, "group")
+			return nil, api.NotFoundMessage(get.GroupId, "group")
 		}
 		return nil, err
 	}
@@ -68,7 +101,7 @@ func (s *GroupsService) Get(groupId, accountId uuid.UUID, params *RetrieveGroupP
 		ParentGroup: api.Expandable{ID: row.ParentGroup},
 	}
 
-	if !omitBase {
+	if !get.OmitBase {
 		group.ID = &row.ID
 		group.CreatedAt = &row.CreatedAt
 		group.UpdatedAt = &row.UpdatedAt
@@ -77,24 +110,34 @@ func (s *GroupsService) Get(groupId, accountId uuid.UUID, params *RetrieveGroupP
 	return group, nil
 }
 
-func (s *GroupsService) List(accountId uuid.UUID, params *ListGroupsParams) (groups []*Group, hasMore bool, err error) {
-	if params.StartingAfter != nil {
-		group, err := s.Get(*params.StartingAfter, accountId, &RetrieveGroupParams{}, false)
+func (s *GroupsService) List(list List) (groups []*Group, hasMore bool, err error) {
+	if list.RequestParams.StartingAfter != nil {
+		group, err := s.Get(Get{
+			AccountId:     list.AccountId,
+			GroupId:       *list.RequestParams.StartingAfter,
+			RequestParams: RetrieveGroupParams{},
+			OmitBase:      false,
+		})
 		if err != nil {
 			return groups, hasMore, err
 		}
-		params.StartingAfterDate = group.CreatedAt
+		list.RequestParams.StartingAfterDate = group.CreatedAt
 	}
 
-	if params.EndingBefore != nil {
-		group, err := s.Get(*params.EndingBefore, accountId, &RetrieveGroupParams{}, false)
+	if list.RequestParams.EndingBefore != nil {
+		group, err := s.Get(Get{
+			AccountId:     list.AccountId,
+			GroupId:       *list.RequestParams.EndingBefore,
+			RequestParams: RetrieveGroupParams{},
+			OmitBase:      false,
+		})
 		if err != nil {
 			return groups, hasMore, err
 		}
-		params.EndingBeforeDate = group.CreatedAt
+		list.RequestParams.EndingBeforeDate = group.CreatedAt
 	}
 
-	dbParams := MapListGroupsParams(accountId, params)
+	dbParams := MapListGroupsParams(list)
 
 	rows, err := s.Db.ListGroups(context.Background(), dbParams)
 	if err != nil {
@@ -132,13 +175,18 @@ func (s *GroupsService) List(accountId uuid.UUID, params *ListGroupsParams) (gro
 	return groups, hasMore, err
 }
 
-func (s *GroupsService) Update(groupId, accountId uuid.UUID, params *UpdateGroupParams) (*Group, error) {
-	_, err := s.Get(groupId, accountId, &RetrieveGroupParams{}, true)
+func (s *GroupsService) Update(update Update) (*Group, error) {
+	_, err := s.Get(Get{
+		AccountId:     update.AccountId,
+		GroupId:       update.GroupId,
+		RequestParams: RetrieveGroupParams{},
+		OmitBase:      true,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	dbParams := MapUpdateGroupParams(groupId, accountId, params)
+	dbParams := MapUpdateGroupParams(update)
 
 	row, err := s.Db.UpdateGroup(context.Background(), dbParams)
 	if err != nil {

@@ -3,38 +3,37 @@ package groups
 import (
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
-	"github.com/google/uuid"
 )
 
-func MapCreateGroupParams(accountId uuid.UUID, cp *CreateGroupParams) database.CreateGroupParams {
+func MapCreateGroupParams(create Create) database.CreateGroupParams {
 	cgp := database.CreateGroupParams{
-		AccountID:   accountId,
-		Description: api.NullString(cp.Description),
-		Name:        cp.Name,
-		ParentID:    api.NullUUID(cp.ParentGroup),
+		AccountID:   create.AccountId,
+		Description: api.NullString(create.RequestParams.Description),
+		Name:        create.RequestParams.Name,
+		ParentID:    api.NullUUID(create.RequestParams.ParentGroup),
 	}
 	return cgp
 }
 
-func MapListGroupsParams(accountId uuid.UUID, lp *ListGroupsParams) database.ListGroupsParams {
+func MapListGroupsParams(list List) database.ListGroupsParams {
 	lgp := database.ListGroupsParams{
-		AccountID:   accountId,
-		Description: api.NullString(lp.Description),
-		Name:        api.NullString(lp.Name),
-		ParentID:    api.NullUUID(lp.ParentGroup),
+		AccountID:   list.AccountId,
+		Description: api.NullString(list.RequestParams.Description),
+		Name:        api.NullString(list.RequestParams.Name),
+		ParentID:    api.NullUUID(list.RequestParams.ParentGroup),
 	}
-	database.MapTimeRange(lp.CreatedAt, &lgp.CreatedAtGt, &lgp.CreatedAtGte, &lgp.CreatedAtLt, &lgp.CreatedAtLte)
-	database.MapTimeRange(lp.UpdatedAt, &lgp.UpdatedAtGt, &lgp.UpdatedAtGte, &lgp.UpdatedAtLt, &lgp.UpdatedAtLte)
-	database.MapPaginationParams(*lp.PaginationParams, &lgp)
+	database.MapTimeRange(list.RequestParams.CreatedAt, &lgp.CreatedAtGt, &lgp.CreatedAtGte, &lgp.CreatedAtLt, &lgp.CreatedAtLte)
+	database.MapTimeRange(list.RequestParams.UpdatedAt, &lgp.UpdatedAtGt, &lgp.UpdatedAtGte, &lgp.UpdatedAtLt, &lgp.UpdatedAtLte)
+	database.MapPaginationParams(*list.RequestParams.PaginationParams, &lgp)
 	return lgp
 }
 
-func MapUpdateGroupParams(id uuid.UUID, accountId uuid.UUID, up *UpdateGroupParams) database.UpdateGroupParams {
+func MapUpdateGroupParams(update Update) database.UpdateGroupParams {
 	return database.UpdateGroupParams{
-		AccountID:   accountId,
-		Description: api.NullString(up.Description),
-		ID:          id,
-		Name:        api.NullString(up.Name),
-		ParentID:    api.NullUUID(up.ParentGroup),
+		AccountID:   update.AccountId,
+		Description: api.NullString(update.RequestParams.Description),
+		ID:          update.GroupId,
+		Name:        api.NullString(update.RequestParams.Name),
+		ParentID:    api.NullUUID(update.RequestParams.ParentGroup),
 	}
 }
