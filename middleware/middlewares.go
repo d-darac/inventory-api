@@ -122,14 +122,15 @@ func (mw *Middleware) RecoveryMw(next http.HandlerFunc) http.HandlerFunc {
 func (mw *Middleware) CheckRouteAndMethodMw(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pathsMethods := map[string][]string{
-			`^\/v1\/groups$`:                   {"GET", "POST"},
-			`^\/v1\/groups\/[^\/]+$`:           {"DELETE", "GET", "PUT"},
-			`^\/v1\/inventories$`:              {"GET", "POST"},
-			`^\/v1\/inventories\/[^\/]+$`:      {"DELETE", "GET", "PUT"},
-			`^\/v1\/items$`:                    {"GET", "POST"},
-			`^\/v1\/items\/[^\/]+$`:            {"DELETE", "GET", "PUT"},
-			`^\/v1\/item_identifiers$`:         {"GET", "POST"},
-			`^\/v1\/item_identifiers\/[^\/]+$`: {"DELETE", "GET", "PUT"},
+			`^\/v1\/groups$`:                     {"GET", "POST"},
+			`^\/v1\/groups\/[^\/]+$`:             {"DELETE", "GET", "PUT"},
+			`^\/v1\/inventories$`:                {"GET", "POST"},
+			`^\/v1\/inventories\/[^\/]+$`:        {"DELETE", "GET", "PUT"},
+			`^\/v1\/inventories\/[^\/]+\/items$`: {"GET"},
+			`^\/v1\/items$`:                      {"GET", "POST"},
+			`^\/v1\/items\/[^\/]+$`:              {"DELETE", "GET", "PUT"},
+			`^\/v1\/item_identifiers$`:           {"GET", "POST"},
+			`^\/v1\/item_identifiers\/[^\/]+$`:   {"DELETE", "GET", "PUT"},
 		}
 		if err := validateRoute(r.Method, r.URL.Path, pathsMethods); err != nil {
 			api.ResError(w, err)
