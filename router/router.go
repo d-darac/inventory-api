@@ -28,6 +28,7 @@ func LoadRoutes(mux *http.ServeMux, cfg *api.ApiConfig) {
 	mux.HandleFunc("DELETE /inventories/{id}", inventoriesHandler.Delete)
 	mux.HandleFunc("GET /inventories", inventoriesHandler.List)
 	mux.HandleFunc("GET /inventories/{id}", inventoriesHandler.Retrieve)
+	mux.HandleFunc("GET /inventories/{id}/items", inventoriesHandler.ListItems)
 	mux.HandleFunc("PUT /inventories/{id}", inventoriesHandler.Update)
 
 	itemIdentifiersHandler := handlers.NewItemIdentifiersHandler(cfg.Db)
