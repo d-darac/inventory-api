@@ -32,13 +32,13 @@ func TestUnitMapCreateGroupParams(t *testing.T) {
 	desc := "description"
 	parent := uuid.New()
 
-	cp := &CreateGroupParams{
+	cp := CreateGroupParams{
 		Description: &desc,
 		Name:        name,
 		ParentGroup: &parent,
 	}
 
-	dbp := MapCreateGroupParams(acc, cp)
+	dbp := MapCreateGroupParams(Create{AccountId: acc, RequestParams: cp})
 	if dbp.AccountID != acc {
 		t.Fatalf("expected account id %v, got %v", acc, dbp.AccountID)
 	}
@@ -58,7 +58,7 @@ func TestUnitMapListGroupsParams(t *testing.T) {
 	lp.Name = &name
 	lp.Description = &desc
 
-	dbp := MapListGroupsParams(acc, lp)
+	dbp := MapListGroupsParams(List{AccountId: acc, RequestParams: lp})
 	if dbp.AccountID != acc {
 		t.Fatalf("expected account id %v, got %v", acc, dbp.AccountID)
 	}
@@ -74,11 +74,11 @@ func TestUnitMapUpdateGroupParams(t *testing.T) {
 	id := uuid.New()
 	acc := uuid.New()
 	name := "test-group"
-	up := &UpdateGroupParams{
+	up := UpdateGroupParams{
 		Name: &name,
 	}
 
-	dbp := MapUpdateGroupParams(id, acc, up)
+	dbp := MapUpdateGroupParams(Update{AccountId: acc, GroupId: id, RequestParams: up})
 	if dbp.ID != id {
 		t.Fatalf("expected id %v, got %v", id, dbp.ID)
 	}
@@ -91,7 +91,7 @@ func TestUnitMapUpdateGroupParams(t *testing.T) {
 }
 
 func TestIntegrationCreate(t *testing.T) {
-	godotenv.Load("../../../.env")
+	godotenv.Load("../../.env")
 	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
@@ -122,12 +122,12 @@ func TestIntegrationCreate(t *testing.T) {
 	name := "test-group"
 	desc := "description"
 
-	cp := &CreateGroupParams{
+	cp := CreateGroupParams{
 		Description: &desc,
 		Name:        name,
 	}
 
-	group, err := s.Create(acc.ID, cp)
+	group, err := s.Create(Create{AccountId: acc.ID, RequestParams: cp})
 	if err != nil {
 		t.Fatalf("couldn't create test group: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestIntegrationCreate(t *testing.T) {
 }
 
 func TestIntegrationDelete(t *testing.T) {
-	godotenv.Load("../../../.env")
+	godotenv.Load("../../.env")
 	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
@@ -196,7 +196,7 @@ func TestIntegrationDelete(t *testing.T) {
 		t.Fatalf("couldn't create test group: %v", err)
 	}
 
-	err = s.Delete(grp.ID, acc.ID)
+	err = s.Delete(Delete{AccountId: acc.ID, GroupId: grp.ID})
 	if err != nil {
 		t.Fatalf("error deleting group: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestIntegrationDelete(t *testing.T) {
 }
 
 func TestIntegrationList(t *testing.T) {
-	godotenv.Load("../../../.env")
+	godotenv.Load("../../.env")
 	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
@@ -255,7 +255,7 @@ func TestIntegrationList(t *testing.T) {
 		rows = append(rows, grp)
 	}
 
-	groups, hasMore, err := s.List(acc.ID, NewListGroupsParams())
+	groups, hasMore, err := s.List(List{AccountId: acc.ID, RequestParams: NewListGroupsParams()})
 	if err != nil {
 		t.Fatalf("error listing groups: %v", err)
 	}
@@ -282,7 +282,7 @@ func TestIntegrationList(t *testing.T) {
 }
 
 func TestIntegrationRetrieve(t *testing.T) {
-	godotenv.Load("../../../.env")
+	godotenv.Load("../../.env")
 	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
@@ -325,7 +325,12 @@ func TestIntegrationRetrieve(t *testing.T) {
 		t.Fatalf("couldn't create test group: %v", err)
 	}
 
-	group, err := s.Get(grp.ID, acc.ID, &RetrieveGroupParams{}, false)
+	group, err := s.Get(Get{
+		AccountId:     acc.ID,
+		GroupId:       grp.ID,
+		RequestParams: RetrieveGroupParams{},
+		OmitBase:      false,
+	})
 	if err != nil {
 		t.Fatalf("couldn't get test group: %v", err)
 	}
@@ -351,7 +356,7 @@ func TestIntegrationRetrieve(t *testing.T) {
 }
 
 func TestIntegrationUpdate(t *testing.T) {
-	godotenv.Load("../../../.env")
+	godotenv.Load("../../.env")
 	dbUrl := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbUrl)
@@ -396,10 +401,11 @@ func TestIntegrationUpdate(t *testing.T) {
 		t.Fatalf("couldn't create test group: %v", err)
 	}
 
-	group, err := s.Update(grp.ID, acc.ID, &UpdateGroupParams{
+	up := UpdateGroupParams{
 		Name:        &updatedName,
 		Description: &updatedDesc,
-	})
+	}
+	group, err := s.Update(Update{AccountId: acc.ID, GroupId: grp.ID, RequestParams: up})
 	if err != nil {
 		t.Fatalf("couldn't update test group: %v", err)
 	}
