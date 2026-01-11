@@ -4,7 +4,9 @@ import (
 	"net/http"
 	"slices"
 
+	"github.com/d-darac/inventory-api/internal/groups"
 	"github.com/d-darac/inventory-api/internal/inventories"
+	itemidentifiers "github.com/d-darac/inventory-api/internal/item_identifiers"
 	"github.com/d-darac/inventory-api/internal/items"
 	"github.com/d-darac/inventory-api/middleware"
 	"github.com/d-darac/inventory-assets/api"
@@ -13,24 +15,28 @@ import (
 )
 
 type InventoriesHandler struct {
-	Inventories inventories.InventoriesService
-	Items       items.ItemsService
-	validator   *api.Validator
+	Groups          groups.GroupsService
+	Inventories     inventories.InventoriesService
+	Items           items.ItemsService
+	ItemIdentifiers itemidentifiers.ItemIdentifiersService
+	validator       *api.Validator
 }
 
 func NewInventoriesHandler(db *database.Queries) *InventoriesHandler {
 	return &InventoriesHandler{
-		Inventories: *inventories.NewInventoriesService(db),
-		Items:       *items.NewItemsService(db),
-		validator:   api.NewValidator(),
+		Groups:          *groups.NewGroupsService(db),
+		Inventories:     *inventories.NewInventoriesService(db),
+		Items:           *items.NewItemsService(db),
+		ItemIdentifiers: *itemidentifiers.NewItemIdentifiersService(db),
+		validator:       api.NewValidator(),
 	}
 }
 
 func (h *InventoriesHandler) Create(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	params := &inventories.CreateInventoryParams{}
+	params := inventories.CreateInventoryParams{}
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -40,13 +46,8 @@ func (h *InventoriesHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inventory, err := h.Inventories.Create(accountId, params)
+	inventory, err := h.Inventories.Create(inventories.Create{AccountId: accountId, RequestParams: params})
 	if err != nil {
-		api.ResError(w, err)
-		return
-	}
-
-	if err := h.expandFields(params.Expand, inventory, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -63,7 +64,7 @@ func (h *InventoriesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.Inventories.Delete(accountId, inventoryId); err != nil {
+	if err = h.Inventories.Delete(inventories.Delete{AccountId: accountId, InventoryId: inventoryId}); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -76,7 +77,7 @@ func (h *InventoriesHandler) List(w http.ResponseWriter, r *http.Request) {
 	listRes := api.NewListResponse(r)
 	params := inventories.NewListInventoriesParams()
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -86,7 +87,7 @@ func (h *InventoriesHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inventories, hasMore, err := h.Inventories.List(accountId, params)
+	inventories, hasMore, err := h.Inventories.List(inventories.List{AccountId: accountId, RequestParams: params})
 	if err != nil {
 		api.ResError(w, err)
 		return
@@ -97,7 +98,57 @@ func (h *InventoriesHandler) List(w http.ResponseWriter, r *http.Request) {
 		listRes.HasMore = hasMore
 	}
 
-	if err := h.expandFieldsList(params.Expand, inventories, accountId); err != nil {
+	api.ResJSON(w, http.StatusOK, listRes)
+}
+
+func (h *InventoriesHandler) ListItems(w http.ResponseWriter, r *http.Request) {
+	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
+	inventoryId, err := api.GetIdFromPath(r)
+	if err != nil {
+		api.ResError(w, err)
+		return
+	}
+	listRes := api.NewListResponse(r)
+	params := inventories.NewListItemsParams()
+
+	if err := api.JsonDecode(r, &params, w); err != nil {
+		api.ResError(w, err)
+		return
+	}
+
+	if errs := h.validator.ValidateRequestParams(params); errs != nil {
+		api.ResErrorList(w, errs)
+		return
+	}
+
+	items, hasMore, err := h.Items.List(items.List{
+		AccountId: accountId,
+		RequestParams: items.ListItemsParams{
+			PaginationParams: params.PaginationParams,
+			Active:           params.Active,
+			CreatedAt:        params.CreatedAt,
+			Description:      params.Description,
+			Group:            params.Group,
+			Inventory:        &inventoryId,
+			Name:             params.Name,
+			PriceAmount:      params.PriceAmount,
+			PriceCurrency:    params.PriceCurrency,
+			Type:             params.Type,
+			UpdatedAt:        params.UpdatedAt,
+			Variant:          params.Variant,
+		},
+	})
+	if err != nil {
+		api.ResError(w, err)
+		return
+	}
+
+	if len(items) != 0 {
+		listRes.Data = append(listRes.Data, items)
+		listRes.HasMore = hasMore
+	}
+
+	if err := h.expandFieldsItemsList(params.Expand, items, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -113,9 +164,9 @@ func (h *InventoriesHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := &inventories.RetrieveInventoryParams{}
+	params := inventories.RetrieveInventoryParams{}
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -125,13 +176,13 @@ func (h *InventoriesHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inventory, err := h.Inventories.Get(inventoryId, accountId, params)
+	inventory, err := h.Inventories.Get(inventories.Get{
+		AccountId:     accountId,
+		InventoryId:   inventoryId,
+		RequestParams: params,
+		OmitBase:      false,
+	})
 	if err != nil {
-		api.ResError(w, err)
-		return
-	}
-
-	if err := h.expandFields(params.Expand, inventory, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -147,9 +198,9 @@ func (h *InventoriesHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := &inventories.UpdateInventoryParams{}
+	params := inventories.UpdateInventoryParams{}
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -159,13 +210,8 @@ func (h *InventoriesHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inventory, err := h.Inventories.Update(inventoryId, accountId, params)
+	inventory, err := h.Inventories.Update(inventories.Update{AccountId: accountId, InventoryId: inventoryId, RequestParams: params})
 	if err != nil {
-		api.ResError(w, err)
-		return
-	}
-
-	if err := h.expandFields(params.Expand, inventory, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -173,30 +219,47 @@ func (h *InventoriesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	api.ResJSON(w, http.StatusOK, inventory)
 }
 
-func (h *InventoriesHandler) expandFields(fields *[]string, inventory *inventories.Inventory, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "items") {
-		iParams := items.NewListItemsParams()
-		iParams.Inventory = &inventory.ID
-		items, hasMore, err := h.Items.List(accountId, iParams)
-		if err != nil {
+func (h *InventoriesHandler) expandFieldsItems(fields *[]string, item *items.Item, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(*fields, "group") {
+		getParams := groups.Get{
+			AccountId:     accountId,
+			GroupId:       item.Group.ID.UUID,
+			RequestParams: groups.RetrieveGroupParams{},
+			OmitBase:      true,
+		}
+		if _, err := api.ExpandField(&item.Group, h.Groups.Get, getParams); err != nil {
 			return err
 		}
-		inventory.Items.Data = make([]interface{}, 0)
-		for _, i := range items {
-			inventory.Items.Data = append(inventory.Items.Data, i)
+	}
+	if fields != nil && slices.Contains(*fields, "inventory") {
+		getParams := inventories.Get{
+			AccountId:     accountId,
+			InventoryId:   item.Inventory.ID.UUID,
+			RequestParams: inventories.RetrieveInventoryParams{},
+			OmitBase:      true,
 		}
-		inventory.Items.HasMore = hasMore
-		inventory.Items.Url = "/v1/items"
+		if _, err := api.ExpandField(&item.Inventory, h.Inventories.Get, getParams); err != nil {
+			return err
+		}
+	}
+	if fields != nil && slices.Contains(*fields, "identifiers") {
+		getParams := itemidentifiers.Get{
+			AccountId:         accountId,
+			ItemIdentifiersId: item.Identifiers.ID.UUID,
+			RequestParams:     itemidentifiers.RetrieveItemIdentifiersParams{},
+			OmitBase:          true,
+		}
+		if _, err := api.ExpandField(&item.Identifiers, h.ItemIdentifiers.Get, getParams); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (h *InventoriesHandler) expandFieldsList(fields *[]string, inventories []*inventories.Inventory, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "items") {
-		for _, i := range inventories {
-			if err := h.expandFields(&[]string{"items"}, i, accountId); err != nil {
-				return err
-			}
+func (h *InventoriesHandler) expandFieldsItemsList(fields *[]string, items []*items.Item, accountId uuid.UUID) error {
+	for _, i := range items {
+		if err := h.expandFieldsItems(fields, i, accountId); err != nil {
+			return err
 		}
 	}
 	return nil
