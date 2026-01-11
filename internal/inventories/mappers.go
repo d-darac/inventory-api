@@ -3,33 +3,32 @@ package inventories
 import (
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
-	"github.com/google/uuid"
 )
 
-func MapCreateInventoryParams(accountId uuid.UUID, cp *CreateInventoryParams) database.CreateInventoryParams {
+func MapCreateInventoryParams(create Create) database.CreateInventoryParams {
 	cip := database.CreateInventoryParams{
-		AccountID: accountId,
-		InStock:   cp.InStock,
-		Orderable: api.NullInt32(cp.Orderable),
+		AccountID: create.AccountId,
+		InStock:   create.RequestParams.InStock,
+		Orderable: api.NullInt32(create.RequestParams.Orderable),
 	}
 	return cip
 }
 
-func MapListInventoriesParams(accountId uuid.UUID, lp *ListInventoriesParams) database.ListInventoriesParams {
+func MapListInventoriesParams(list List) database.ListInventoriesParams {
 	lip := database.ListInventoriesParams{
-		AccountID: accountId,
+		AccountID: list.AccountId,
 	}
-	database.MapTimeRange(lp.CreatedAt, &lip.CreatedAtGt, &lip.CreatedAtGte, &lip.CreatedAtLt, &lip.CreatedAtLte)
-	database.MapTimeRange(lp.UpdatedAt, &lip.UpdatedAtGt, &lip.UpdatedAtGte, &lip.UpdatedAtLt, &lip.UpdatedAtLte)
-	database.MapPaginationParams(*lp.PaginationParams, &lip)
+	database.MapTimeRange(list.RequestParams.CreatedAt, &lip.CreatedAtGt, &lip.CreatedAtGte, &lip.CreatedAtLt, &lip.CreatedAtLte)
+	database.MapTimeRange(list.RequestParams.UpdatedAt, &lip.UpdatedAtGt, &lip.UpdatedAtGte, &lip.UpdatedAtLt, &lip.UpdatedAtLte)
+	database.MapPaginationParams(*list.RequestParams.PaginationParams, &lip)
 	return lip
 }
 
-func MapUpdateInventoryParams(id, accountId uuid.UUID, up *UpdateInventoryParams) database.UpdateInventoryParams {
+func MapUpdateInventoryParams(update Update) database.UpdateInventoryParams {
 	return database.UpdateInventoryParams{
-		AccountID: accountId,
-		ID:        id,
-		InStock:   api.NullInt32(up.InStock),
-		Orderable: api.NullInt32(up.Orderable),
+		AccountID: update.AccountId,
+		ID:        update.InventoryId,
+		InStock:   api.NullInt32(update.RequestParams.InStock),
+		Orderable: api.NullInt32(update.RequestParams.Orderable),
 	}
 }

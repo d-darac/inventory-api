@@ -14,14 +14,42 @@ type InventoriesService struct {
 	Db *database.Queries
 }
 
+type Create struct {
+	AccountId     uuid.UUID
+	RequestParams CreateInventoryParams
+}
+
+type Delete struct {
+	AccountId   uuid.UUID
+	InventoryId uuid.UUID
+}
+
+type Get struct {
+	AccountId     uuid.UUID
+	InventoryId   uuid.UUID
+	RequestParams RetrieveInventoryParams
+	OmitBase      bool
+}
+
+type List struct {
+	AccountId     uuid.UUID
+	RequestParams ListInventoriesParams
+}
+
+type Update struct {
+	AccountId     uuid.UUID
+	InventoryId   uuid.UUID
+	RequestParams UpdateInventoryParams
+}
+
 func NewInventoriesService(db *database.Queries) *InventoriesService {
 	return &InventoriesService{
 		Db: db,
 	}
 }
 
-func (s *InventoriesService) Create(accountId uuid.UUID, params *CreateInventoryParams) (*Inventory, error) {
-	dbParams := MapCreateInventoryParams(accountId, params)
+func (s *InventoriesService) Create(create Create) (*Inventory, error) {
+	dbParams := MapCreateInventoryParams(create)
 	row, err := s.Db.CreateInventory(context.Background(), dbParams)
 	if err != nil {
 		return nil, err
@@ -41,25 +69,30 @@ func (s *InventoriesService) Create(accountId uuid.UUID, params *CreateInventory
 	return inventory, nil
 }
 
-func (s *InventoriesService) Delete(inventoryId, accountId uuid.UUID) error {
-	_, err := s.Get(inventoryId, accountId, &RetrieveInventoryParams{}, true)
+func (s *InventoriesService) Delete(delete Delete) error {
+	_, err := s.Get(Get{
+		AccountId:     delete.AccountId,
+		InventoryId:   delete.InventoryId,
+		RequestParams: RetrieveInventoryParams{},
+		OmitBase:      true,
+	})
 	if err != nil {
 		return err
 	}
 	return s.Db.DeleteInventory(context.Background(), database.DeleteInventoryParams{
-		ID:        inventoryId,
-		AccountID: accountId,
+		ID:        delete.InventoryId,
+		AccountID: delete.AccountId,
 	})
 }
 
-func (s *InventoriesService) Get(inventoryId, accountId uuid.UUID, params *RetrieveInventoryParams, omitBase bool) (*Inventory, error) {
+func (s *InventoriesService) Get(get Get) (*Inventory, error) {
 	row, err := s.Db.GetInventory(context.Background(), database.GetInventoryParams{
-		ID:        inventoryId,
-		AccountID: accountId,
+		ID:        get.InventoryId,
+		AccountID: get.AccountId,
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, api.NotFoundMessage(inventoryId, "inventory")
+			return nil, api.NotFoundMessage(get.InventoryId, "inventory")
 		}
 		return nil, err
 	}
@@ -72,7 +105,7 @@ func (s *InventoriesService) Get(inventoryId, accountId uuid.UUID, params *Retri
 		},
 	}
 
-	if !omitBase {
+	if !get.OmitBase {
 		inventory.ID = &row.ID
 		inventory.CreatedAt = &row.CreatedAt
 		inventory.UpdatedAt = &row.UpdatedAt
@@ -81,24 +114,34 @@ func (s *InventoriesService) Get(inventoryId, accountId uuid.UUID, params *Retri
 	return inventory, nil
 }
 
-func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesParams) (inventories []*Inventory, hasMore bool, err error) {
-	if params.StartingAfter != nil {
-		Inventory, err := s.Get(*params.StartingAfter, accountId, &RetrieveInventoryParams{}, false)
+func (s *InventoriesService) List(list List) (inventories []*Inventory, hasMore bool, err error) {
+	if list.RequestParams.StartingAfter != nil {
+		Inventory, err := s.Get(Get{
+			AccountId:     list.AccountId,
+			InventoryId:   *list.RequestParams.StartingAfter,
+			RequestParams: RetrieveInventoryParams{},
+			OmitBase:      false,
+		})
 		if err != nil {
 			return inventories, hasMore, err
 		}
-		params.StartingAfterDate = Inventory.CreatedAt
+		list.RequestParams.StartingAfterDate = Inventory.CreatedAt
 	}
 
-	if params.EndingBefore != nil {
-		Inventory, err := s.Get(*params.EndingBefore, accountId, &RetrieveInventoryParams{}, false)
+	if list.RequestParams.EndingBefore != nil {
+		Inventory, err := s.Get(Get{
+			AccountId:     list.AccountId,
+			InventoryId:   *list.RequestParams.EndingBefore,
+			RequestParams: RetrieveInventoryParams{},
+			OmitBase:      false,
+		})
 		if err != nil {
 			return inventories, hasMore, err
 		}
-		params.EndingBeforeDate = Inventory.CreatedAt
+		list.RequestParams.EndingBeforeDate = Inventory.CreatedAt
 	}
 
-	dbParams := MapListInventoriesParams(accountId, params)
+	dbParams := MapListInventoriesParams(list)
 
 	rows, err := s.Db.ListInventories(context.Background(), dbParams)
 	if err != nil {
@@ -138,13 +181,18 @@ func (s *InventoriesService) List(accountId uuid.UUID, params *ListInventoriesPa
 	return inventories, hasMore, err
 }
 
-func (s *InventoriesService) Update(inventoryId, accountId uuid.UUID, params *UpdateInventoryParams) (*Inventory, error) {
-	_, err := s.Get(inventoryId, accountId, &RetrieveInventoryParams{}, true)
+func (s *InventoriesService) Update(update Update) (*Inventory, error) {
+	_, err := s.Get(Get{
+		AccountId:     update.AccountId,
+		InventoryId:   update.InventoryId,
+		RequestParams: RetrieveInventoryParams{},
+		OmitBase:      true,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	dbParams := MapUpdateInventoryParams(inventoryId, accountId, params)
+	dbParams := MapUpdateInventoryParams(update)
 
 	row, err := s.Db.UpdateInventory(context.Background(), dbParams)
 	if err != nil {
