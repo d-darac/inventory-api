@@ -43,18 +43,18 @@ type UpdateInventoryParams struct {
 	Orderable *int32 `json:"orderable" validate:"omitnil"`
 }
 
-func NewListInventoriesParams() *ListInventoriesParams {
+func NewListInventoriesParams() ListInventoriesParams {
 	limit := int32(10)
-	return &ListInventoriesParams{
+	return ListInventoriesParams{
 		PaginationParams: &database.PaginationParams{
 			Limit: &limit,
 		},
 	}
 }
 
-func NewListItemsParams() *ListItemsParams {
+func NewListItemsParams() ListItemsParams {
 	limit := int32(10)
-	return &ListItemsParams{
+	return ListItemsParams{
 		PaginationParams: &database.PaginationParams{
 			Limit: &limit,
 		},

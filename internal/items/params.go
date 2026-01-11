@@ -53,9 +53,9 @@ type UpdateItemParams struct {
 	Expand        *[]string          `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
 }
 
-func NewListItemsParams() *ListItemsParams {
+func NewListItemsParams() ListItemsParams {
 	limit := int32(10)
-	return &ListItemsParams{
+	return ListItemsParams{
 		PaginationParams: &database.PaginationParams{
 			Limit: &limit,
 		},
