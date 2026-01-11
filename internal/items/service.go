@@ -16,14 +16,42 @@ type ItemsService struct {
 	Db *database.Queries
 }
 
+type Create struct {
+	AccountId     uuid.UUID
+	RequestParams CreateItemParams
+}
+
+type Delete struct {
+	AccountId uuid.UUID
+	ItemId    uuid.UUID
+}
+
+type Get struct {
+	AccountId     uuid.UUID
+	ItemId        uuid.UUID
+	RequestParams RetrieveItemParams
+	OmitBase      bool
+}
+
+type List struct {
+	AccountId     uuid.UUID
+	RequestParams ListItemsParams
+}
+
+type Update struct {
+	AccountId     uuid.UUID
+	ItemId        uuid.UUID
+	RequestParams UpdateItemParams
+}
+
 func NewItemsService(db *database.Queries) *ItemsService {
 	return &ItemsService{
 		Db: db,
 	}
 }
 
-func (s *ItemsService) Create(accountId uuid.UUID, params *CreateItemParams) (*Item, error) {
-	dbParams := MapCreateItemParams(accountId, params)
+func (s *ItemsService) Create(create Create) (*Item, error) {
+	dbParams := MapCreateItemParams(create)
 	row, err := s.Db.CreateItem(context.Background(), dbParams)
 	if err != nil {
 		return nil, err
@@ -54,25 +82,30 @@ func (s *ItemsService) Create(accountId uuid.UUID, params *CreateItemParams) (*I
 	return item, nil
 }
 
-func (s *ItemsService) Delete(itemId, accountId uuid.UUID) error {
-	_, err := s.Get(itemId, accountId, &RetrieveItemParams{}, true)
+func (s *ItemsService) Delete(delete Delete) error {
+	_, err := s.Get(Get{
+		AccountId:     delete.AccountId,
+		ItemId:        delete.ItemId,
+		RequestParams: RetrieveItemParams{},
+		OmitBase:      true,
+	})
 	if err != nil {
 		return err
 	}
 	return s.Db.DeleteItem(context.Background(), database.DeleteItemParams{
-		ID:        itemId,
-		AccountID: accountId,
+		ID:        delete.ItemId,
+		AccountID: delete.AccountId,
 	})
 }
 
-func (s *ItemsService) Get(itemId, accountId uuid.UUID, params *RetrieveItemParams, omitBase bool) (*Item, error) {
+func (s *ItemsService) Get(get Get) (*Item, error) {
 	row, err := s.Db.GetItem(context.Background(), database.GetItemParams{
-		ID:        itemId,
-		AccountID: accountId,
+		ID:        get.ItemId,
+		AccountID: get.AccountId,
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, api.NotFoundMessage(itemId, "item")
+			return nil, api.NotFoundMessage(get.ItemId, "item")
 		}
 		return nil, err
 	}
@@ -96,7 +129,7 @@ func (s *ItemsService) Get(itemId, accountId uuid.UUID, params *RetrieveItemPara
 		Type:    row.Type,
 	}
 
-	if !omitBase {
+	if !get.OmitBase {
 		item.ID = &row.ID
 		item.CreatedAt = &row.CreatedAt
 		item.UpdatedAt = &row.UpdatedAt
@@ -104,24 +137,34 @@ func (s *ItemsService) Get(itemId, accountId uuid.UUID, params *RetrieveItemPara
 	return item, nil
 }
 
-func (s *ItemsService) List(accountId uuid.UUID, params *ListItemsParams) (items []*Item, hasMore bool, err error) {
-	if params.StartingAfter != nil {
-		item, err := s.Get(*params.StartingAfter, accountId, &RetrieveItemParams{}, false)
+func (s *ItemsService) List(list List) (items []*Item, hasMore bool, err error) {
+	if list.RequestParams.StartingAfter != nil {
+		item, err := s.Get(Get{
+			AccountId:     list.AccountId,
+			ItemId:        *list.RequestParams.StartingAfter,
+			RequestParams: RetrieveItemParams{},
+			OmitBase:      false,
+		})
 		if err != nil {
 			return items, hasMore, err
 		}
-		params.StartingAfterDate = item.CreatedAt
+		list.RequestParams.StartingAfterDate = item.CreatedAt
 	}
 
-	if params.EndingBefore != nil {
-		item, err := s.Get(*params.EndingBefore, accountId, &RetrieveItemParams{}, false)
+	if list.RequestParams.EndingBefore != nil {
+		item, err := s.Get(Get{
+			AccountId:     list.AccountId,
+			ItemId:        *list.RequestParams.EndingBefore,
+			RequestParams: RetrieveItemParams{},
+			OmitBase:      false,
+		})
 		if err != nil {
 			return items, hasMore, err
 		}
-		params.EndingBeforeDate = item.CreatedAt
+		list.RequestParams.EndingBeforeDate = item.CreatedAt
 	}
 
-	dbParams := MapListItemsParams(accountId, params)
+	dbParams := MapListItemsParams(list)
 
 	rows, err := s.Db.ListItems(context.Background(), dbParams)
 	if err != nil {
@@ -172,13 +215,18 @@ func (s *ItemsService) List(accountId uuid.UUID, params *ListItemsParams) (items
 	return items, hasMore, err
 }
 
-func (s *ItemsService) Update(itemId, accountId uuid.UUID, params *UpdateItemParams) (*Item, error) {
-	_, err := s.Get(itemId, accountId, &RetrieveItemParams{}, true)
+func (s *ItemsService) Update(update Update) (*Item, error) {
+	_, err := s.Get(Get{
+		AccountId:     update.AccountId,
+		ItemId:        update.ItemId,
+		RequestParams: RetrieveItemParams{},
+		OmitBase:      true,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	dbParams := MapUpdateItemParams(itemId, accountId, params)
+	dbParams := MapUpdateItemParams(update)
 
 	row, err := s.Db.UpdateItem(context.Background(), dbParams)
 	if err != nil {
