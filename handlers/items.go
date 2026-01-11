@@ -34,9 +34,9 @@ func NewItemsHandler(db *database.Queries) *ItemsHandler {
 
 func (h *ItemsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	params := &items.CreateItemParams{}
+	params := items.CreateItemParams{}
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -46,7 +46,7 @@ func (h *ItemsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.Items.Create(accountId, params)
+	item, err := h.Items.Create(items.Create{AccountId: accountId, RequestParams: params})
 	if err != nil {
 		api.ResError(w, err)
 		return
@@ -62,14 +62,14 @@ func (h *ItemsHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *ItemsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	groupId, err := api.GetIdFromPath(r)
+	itemId, err := api.GetIdFromPath(r)
 
 	if err != nil {
 		api.ResError(w, err)
 		return
 	}
 
-	if err = h.Items.Delete(accountId, groupId); err != nil {
+	if err = h.Items.Delete(items.Delete{AccountId: accountId, ItemId: itemId}); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -82,7 +82,7 @@ func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 	listRes := api.NewListResponse(r)
 	params := items.NewListItemsParams()
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -92,7 +92,7 @@ func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, hasMore, err := h.Items.List(accountId, params)
+	items, hasMore, err := h.Items.List(items.List{AccountId: accountId, RequestParams: params})
 	if err != nil {
 		api.ResError(w, err)
 		return
@@ -108,15 +108,15 @@ func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *ItemsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	groupId, err := api.GetIdFromPath(r)
+	itemId, err := api.GetIdFromPath(r)
 	if err != nil {
 		api.ResError(w, err)
 		return
 	}
 
-	params := &items.RetrieveItemParams{}
+	params := items.RetrieveItemParams{}
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -126,7 +126,12 @@ func (h *ItemsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.Items.Get(groupId, accountId, params)
+	item, err := h.Items.Get(items.Get{
+		AccountId:     accountId,
+		ItemId:        itemId,
+		RequestParams: params,
+		OmitBase:      false,
+	})
 	if err != nil {
 		api.ResError(w, err)
 		return
@@ -142,15 +147,15 @@ func (h *ItemsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 
 func (h *ItemsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	groupId, err := api.GetIdFromPath(r)
+	itemId, err := api.GetIdFromPath(r)
 	if err != nil {
 		api.ResError(w, err)
 		return
 	}
 
-	params := &items.UpdateItemParams{}
+	params := items.UpdateItemParams{}
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -160,7 +165,11 @@ func (h *ItemsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.Items.Update(groupId, accountId, params)
+	item, err := h.Items.Update(items.Update{
+		AccountId:     accountId,
+		ItemId:        itemId,
+		RequestParams: params,
+	})
 	if err != nil {
 		api.ResError(w, err)
 		return
@@ -176,20 +185,37 @@ func (h *ItemsHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 func (h *ItemsHandler) expandFields(fields *[]string, item *items.Item, accountId uuid.UUID) error {
 	if fields != nil && slices.Contains(*fields, "group") {
-		if _, err := api.ExpandField(&item.Group, item.Group.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get); err != nil {
+		getParams := groups.Get{
+			AccountId:     accountId,
+			GroupId:       item.Group.ID.UUID,
+			RequestParams: groups.RetrieveGroupParams{},
+			OmitBase:      true,
+		}
+		if _, err := api.ExpandField(&item.Group, h.Groups.Get, getParams); err != nil {
 			return err
 		}
 	}
 	if fields != nil && slices.Contains(*fields, "inventory") {
-		if _, err := api.ExpandField(&item.Inventory, item.Inventory.ID.UUID, accountId, &inventories.RetrieveInventoryParams{}, h.Inventories.Get); err != nil {
+		getParams := inventories.Get{
+			AccountId:     accountId,
+			InventoryId:   item.Inventory.ID.UUID,
+			RequestParams: inventories.RetrieveInventoryParams{},
+			OmitBase:      true,
+		}
+		if _, err := api.ExpandField(&item.Inventory, h.Inventories.Get, getParams); err != nil {
 			return err
 		}
 	}
-	if fields != nil && slices.Contains(*fields, "item identifiers") {
-		if _, err := api.ExpandField(&item.Identifiers, item.Identifiers.ID.UUID, accountId, &itemidentifiers.RetrieveItemIdentifiersParams{}, h.ItemIdentifiers.Get); err != nil {
+	if fields != nil && slices.Contains(*fields, "identifiers") {
+		getParams := itemidentifiers.Get{
+			AccountId:         accountId,
+			ItemIdentifiersId: item.Identifiers.ID.UUID,
+			RequestParams:     itemidentifiers.RetrieveItemIdentifiersParams{},
+			OmitBase:          true,
+		}
+		if _, err := api.ExpandField(&item.Identifiers, h.ItemIdentifiers.Get, getParams); err != nil {
 			return err
 		}
-
 	}
 	return nil
 }

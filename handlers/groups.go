@@ -25,9 +25,9 @@ func NewGroupsHandler(db *database.Queries) *GroupsHandler {
 
 func (h *GroupsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	accountId := r.Context().Value(middleware.AuthAccountID).(uuid.UUID)
-	params := &groups.CreateGroupParams{}
+	params := groups.CreateGroupParams{}
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -37,7 +37,7 @@ func (h *GroupsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, err := h.Groups.Create(accountId, params)
+	group, err := h.Groups.Create(groups.Create{AccountId: accountId, RequestParams: params})
 	if err != nil {
 		api.ResError(w, err)
 		return
@@ -60,7 +60,7 @@ func (h *GroupsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.Groups.Delete(accountId, groupId); err != nil {
+	if err = h.Groups.Delete(groups.Delete{AccountId: accountId, GroupId: groupId}); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -73,7 +73,7 @@ func (h *GroupsHandler) List(w http.ResponseWriter, r *http.Request) {
 	listRes := api.NewListResponse(r)
 	params := groups.NewListGroupsParams()
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -83,7 +83,7 @@ func (h *GroupsHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	groups, hasMore, err := h.Groups.List(accountId, params)
+	groups, hasMore, err := h.Groups.List(groups.List{AccountId: accountId, RequestParams: params})
 	if err != nil {
 		api.ResError(w, err)
 		return
@@ -105,9 +105,9 @@ func (h *GroupsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := &groups.RetrieveGroupParams{}
+	params := groups.RetrieveGroupParams{}
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -117,7 +117,12 @@ func (h *GroupsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, err := h.Groups.Get(groupId, accountId, params)
+	group, err := h.Groups.Get(groups.Get{
+		AccountId:     accountId,
+		GroupId:       groupId,
+		RequestParams: params,
+		OmitBase:      false,
+	})
 	if err != nil {
 		api.ResError(w, err)
 		return
@@ -139,9 +144,9 @@ func (h *GroupsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := &groups.UpdateGroupParams{}
+	params := groups.UpdateGroupParams{}
 
-	if err := api.JsonDecode(r, params, w); err != nil {
+	if err := api.JsonDecode(r, &params, w); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -151,7 +156,7 @@ func (h *GroupsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, err := h.Groups.Update(groupId, accountId, params)
+	group, err := h.Groups.Update(groups.Update{AccountId: accountId, GroupId: groupId, RequestParams: params})
 	if err != nil {
 		api.ResError(w, err)
 		return
@@ -167,7 +172,22 @@ func (h *GroupsHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 func (h *GroupsHandler) expandFields(fields *[]string, group *groups.Group, accountId uuid.UUID) error {
 	if fields != nil && slices.Contains(*fields, "parent_group") {
-		if _, err := api.ExpandField(&group.ParentGroup, group.ParentGroup.ID.UUID, accountId, &groups.RetrieveGroupParams{}, h.Groups.Get); err != nil {
+		getParams := groups.Get{
+			AccountId:     accountId,
+			GroupId:       group.ParentGroup.ID.UUID,
+			RequestParams: groups.RetrieveGroupParams{},
+			OmitBase:      true,
+		}
+		if _, err := api.ExpandField(&group.ParentGroup, h.Groups.Get, getParams); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *GroupsHandler) expandFieldsList(fields *[]string, groups []*groups.Group, accountId uuid.UUID) error {
+	for _, g := range groups {
+		if err := h.expandFields(fields, g, accountId); err != nil {
 			return err
 		}
 	}
