@@ -14,14 +14,42 @@ type ItemIdentifiersService struct {
 	Db *database.Queries
 }
 
+type Create struct {
+	AccountId     uuid.UUID
+	RequestParams CreateItemIdentifiersParams
+}
+
+type Delete struct {
+	AccountId         uuid.UUID
+	ItemIdentifiersId uuid.UUID
+}
+
+type Get struct {
+	AccountId         uuid.UUID
+	ItemIdentifiersId uuid.UUID
+	RequestParams     RetrieveItemIdentifiersParams
+	OmitBase          bool
+}
+
+type List struct {
+	AccountId     uuid.UUID
+	RequestParams ListItemIdentifiersParams
+}
+
+type Update struct {
+	AccountId         uuid.UUID
+	ItemIdentifiersId uuid.UUID
+	RequestParams     UpdateItemIdentifiersParams
+}
+
 func NewItemIdentifiersService(db *database.Queries) *ItemIdentifiersService {
 	return &ItemIdentifiersService{
 		Db: db,
 	}
 }
 
-func (s *ItemIdentifiersService) Create(accountId uuid.UUID, params *CreateItemIdentifiersParams) (*ItemIdentifiers, error) {
-	dbParams := MapCreateItemIdentifiersParams(accountId, params)
+func (s *ItemIdentifiersService) Create(create Create) (*ItemIdentifiers, error) {
+	dbParams := MapCreateItemIdentifiersParams(create)
 	row, err := s.Db.CreateItemIdentifier(context.Background(), dbParams)
 	if err != nil {
 		return nil, err
@@ -45,25 +73,30 @@ func (s *ItemIdentifiersService) Create(accountId uuid.UUID, params *CreateItemI
 	return itemIdentifiers, nil
 }
 
-func (s *ItemIdentifiersService) Delete(itemIdentifiersId, accountId uuid.UUID) error {
-	_, err := s.Get(itemIdentifiersId, accountId, &RetrieveItemIdentifiersParams{}, true)
+func (s *ItemIdentifiersService) Delete(delete Delete) error {
+	_, err := s.Get(Get{
+		AccountId:         delete.AccountId,
+		ItemIdentifiersId: delete.ItemIdentifiersId,
+		RequestParams:     RetrieveItemIdentifiersParams{},
+		OmitBase:          true,
+	})
 	if err != nil {
 		return err
 	}
 	return s.Db.DeleteItemIdentifier(context.Background(), database.DeleteItemIdentifierParams{
-		ID:        itemIdentifiersId,
-		AccountID: accountId,
+		ID:        delete.ItemIdentifiersId,
+		AccountID: delete.AccountId,
 	})
 }
 
-func (s *ItemIdentifiersService) Get(itemIdentifiersId, accountId uuid.UUID, params *RetrieveItemIdentifiersParams, omitBase bool) (*ItemIdentifiers, error) {
+func (s *ItemIdentifiersService) Get(get Get) (*ItemIdentifiers, error) {
 	row, err := s.Db.GetItemIdentifier(context.Background(), database.GetItemIdentifierParams{
-		ID:        itemIdentifiersId,
-		AccountID: accountId,
+		ID:        get.ItemIdentifiersId,
+		AccountID: get.AccountId,
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, api.NotFoundMessage(itemIdentifiersId, "item identifiers")
+			return nil, api.NotFoundMessage(get.ItemIdentifiersId, "item identifiers")
 		}
 		return nil, err
 	}
@@ -80,7 +113,7 @@ func (s *ItemIdentifiersService) Get(itemIdentifiersId, accountId uuid.UUID, par
 		Sku:  str.NullString(row.Sku),
 	}
 
-	if !omitBase {
+	if !get.OmitBase {
 		itemIdentifiers.ID = &row.ID
 		itemIdentifiers.CreatedAt = &row.CreatedAt
 		itemIdentifiers.UpdatedAt = &row.UpdatedAt
@@ -88,24 +121,34 @@ func (s *ItemIdentifiersService) Get(itemIdentifiersId, accountId uuid.UUID, par
 	return itemIdentifiers, nil
 }
 
-func (s *ItemIdentifiersService) List(accountId uuid.UUID, params *ListItemIdentifiersParams) (itemIdentifiers []*ItemIdentifiers, hasMore bool, err error) {
-	if params.StartingAfter != nil {
-		iis, err := s.Get(*params.StartingAfter, accountId, &RetrieveItemIdentifiersParams{}, false)
+func (s *ItemIdentifiersService) List(list List) (itemIdentifiers []*ItemIdentifiers, hasMore bool, err error) {
+	if list.RequestParams.StartingAfter != nil {
+		iis, err := s.Get(Get{
+			AccountId:         list.AccountId,
+			ItemIdentifiersId: *list.RequestParams.StartingAfter,
+			RequestParams:     RetrieveItemIdentifiersParams{},
+			OmitBase:          false,
+		})
 		if err != nil {
 			return itemIdentifiers, hasMore, err
 		}
-		params.StartingAfterDate = iis.CreatedAt
+		list.RequestParams.StartingAfterDate = iis.CreatedAt
 	}
 
-	if params.EndingBefore != nil {
-		iis, err := s.Get(*params.EndingBefore, accountId, &RetrieveItemIdentifiersParams{}, false)
+	if list.RequestParams.EndingBefore != nil {
+		iis, err := s.Get(Get{
+			AccountId:         list.AccountId,
+			ItemIdentifiersId: *list.RequestParams.EndingBefore,
+			RequestParams:     RetrieveItemIdentifiersParams{},
+			OmitBase:          false,
+		})
 		if err != nil {
 			return itemIdentifiers, hasMore, err
 		}
-		params.EndingBeforeDate = iis.CreatedAt
+		list.RequestParams.EndingBeforeDate = iis.CreatedAt
 	}
 
-	dbParams := MapListItemIdentifiersParams(accountId, params)
+	dbParams := MapListItemIdentifiersParams(list)
 
 	rows, err := s.Db.ListItemIdentifiers(context.Background(), dbParams)
 	if err != nil {
@@ -149,13 +192,18 @@ func (s *ItemIdentifiersService) List(accountId uuid.UUID, params *ListItemIdent
 	return itemIdentifiers, hasMore, err
 }
 
-func (s *ItemIdentifiersService) Update(itemIdentifiersId, accountId uuid.UUID, params *UpdateItemIdentifiersParams) (*ItemIdentifiers, error) {
-	_, err := s.Get(itemIdentifiersId, accountId, &RetrieveItemIdentifiersParams{}, true)
+func (s *ItemIdentifiersService) Update(update Update) (*ItemIdentifiers, error) {
+	_, err := s.Get(Get{
+		AccountId:         update.AccountId,
+		ItemIdentifiersId: update.ItemIdentifiersId,
+		RequestParams:     RetrieveItemIdentifiersParams{},
+		OmitBase:          true,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	dbParams := MapUpdateItemIdentifiersParams(itemIdentifiersId, accountId, params)
+	dbParams := MapUpdateItemIdentifiersParams(update)
 
 	row, err := s.Db.UpdateItemIdentifier(context.Background(), dbParams)
 	if err != nil {

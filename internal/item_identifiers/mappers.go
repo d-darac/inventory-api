@@ -3,49 +3,48 @@ package itemidentifiers
 import (
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
-	"github.com/google/uuid"
 )
 
-func MapCreateItemIdentifiersParams(accountId uuid.UUID, cp *CreateItemIdentifiersParams) database.CreateItemIdentifierParams {
+func MapCreateItemIdentifiersParams(create Create) database.CreateItemIdentifierParams {
 	ciip := database.CreateItemIdentifierParams{
-		AccountID: accountId,
-		Ean:       api.NullString(cp.Ean),
-		Gtin:      api.NullString(cp.Gtin),
-		Isbn:      api.NullString(cp.Isbn),
-		ItemID:    cp.Item,
-		Jan:       api.NullString(cp.Jan),
-		Mpn:       api.NullString(cp.Mpn),
-		Nsn:       api.NullString(cp.Nsn),
-		Upc:       api.NullString(cp.Upc),
-		Qr:        api.NullString(cp.Qr),
-		Sku:       api.NullString(cp.Sku),
+		AccountID: create.AccountId,
+		Ean:       api.NullString(create.RequestParams.Ean),
+		Gtin:      api.NullString(create.RequestParams.Gtin),
+		Isbn:      api.NullString(create.RequestParams.Isbn),
+		ItemID:    create.RequestParams.Item,
+		Jan:       api.NullString(create.RequestParams.Jan),
+		Mpn:       api.NullString(create.RequestParams.Mpn),
+		Nsn:       api.NullString(create.RequestParams.Nsn),
+		Upc:       api.NullString(create.RequestParams.Upc),
+		Qr:        api.NullString(create.RequestParams.Qr),
+		Sku:       api.NullString(create.RequestParams.Sku),
 	}
 	return ciip
 }
 
-func MapListItemIdentifiersParams(accountId uuid.UUID, lp *ListItemIdentifiersParams) database.ListItemIdentifiersParams {
+func MapListItemIdentifiersParams(list List) database.ListItemIdentifiersParams {
 	liip := database.ListItemIdentifiersParams{
-		AccountID: accountId,
+		AccountID: list.AccountId,
 	}
-	database.MapTimeRange(lp.CreatedAt, &liip.CreatedAtGt, &liip.CreatedAtGte, &liip.CreatedAtLt, &liip.CreatedAtLte)
-	database.MapTimeRange(lp.UpdatedAt, &liip.UpdatedAtGt, &liip.UpdatedAtGte, &liip.UpdatedAtLt, &liip.UpdatedAtLte)
-	// database.MapPaginationParams(*lp.PaginationParams, &liip)
+	database.MapTimeRange(list.RequestParams.CreatedAt, &liip.CreatedAtGt, &liip.CreatedAtGte, &liip.CreatedAtLt, &liip.CreatedAtLte)
+	database.MapTimeRange(list.RequestParams.UpdatedAt, &liip.UpdatedAtGt, &liip.UpdatedAtGte, &liip.UpdatedAtLt, &liip.UpdatedAtLte)
+	database.MapPaginationParams(*list.RequestParams.PaginationParams, &liip)
 	return liip
 }
 
-func MapUpdateItemIdentifiersParams(id, accountId uuid.UUID, up *UpdateItemIdentifiersParams) database.UpdateItemIdentifierParams {
+func MapUpdateItemIdentifiersParams(update Update) database.UpdateItemIdentifierParams {
 	ciip := database.UpdateItemIdentifierParams{
-		AccountID: accountId,
-		Ean:       api.NullString(up.Ean),
-		Gtin:      api.NullString(up.Gtin),
-		Isbn:      api.NullString(up.Isbn),
-		ID:        id,
-		Jan:       api.NullString(up.Jan),
-		Mpn:       api.NullString(up.Mpn),
-		Nsn:       api.NullString(up.Nsn),
-		Upc:       api.NullString(up.Upc),
-		Qr:        api.NullString(up.Qr),
-		Sku:       api.NullString(up.Sku),
+		AccountID: update.AccountId,
+		Ean:       api.NullString(update.RequestParams.Ean),
+		Gtin:      api.NullString(update.RequestParams.Gtin),
+		Isbn:      api.NullString(update.RequestParams.Isbn),
+		ID:        update.ItemIdentifiersId,
+		Jan:       api.NullString(update.RequestParams.Jan),
+		Mpn:       api.NullString(update.RequestParams.Mpn),
+		Nsn:       api.NullString(update.RequestParams.Nsn),
+		Upc:       api.NullString(update.RequestParams.Upc),
+		Qr:        api.NullString(update.RequestParams.Qr),
+		Sku:       api.NullString(update.RequestParams.Sku),
 	}
 	return ciip
 }
