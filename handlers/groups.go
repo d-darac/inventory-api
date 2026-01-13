@@ -94,6 +94,11 @@ func (h *GroupsHandler) List(w http.ResponseWriter, r *http.Request) {
 		listRes.HasMore = hasMore
 	}
 
+	if err := h.expandFieldsList(params.Expand, groups, accountId); err != nil {
+		api.ResError(w, err)
+		return
+	}
+
 	api.ResJSON(w, http.StatusOK, listRes)
 }
 
