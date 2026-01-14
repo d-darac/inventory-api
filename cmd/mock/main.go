@@ -147,6 +147,9 @@ func apiKey(key, iv string, account database.CreateAccountRow, q *database.Queri
 		RedactedSecret: str.RedactString(apiKey, 4),
 		AccountID:      account.ID,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create test api key: %v", err)
+	}
 	return &apiKey, nil
 }
 
@@ -177,13 +180,13 @@ func groups(nGroups int, parentGroup *database.CreateGroupRow, account database.
 	return rows, nil
 }
 
-func inventories(nInventories int, account database.CreateAccountRow, q *database.Queries) ([]database.CreateInventoryRow, error) {
+func inventories(nInventories int32, account database.CreateAccountRow, q *database.Queries) ([]database.CreateInventoryRow, error) {
 	if nInventories == 0 {
 		return nil, fmt.Errorf("nInventories must be greater than 0")
 	}
 	rows := []database.CreateInventoryRow{}
 	for i := range nInventories {
-		n := int32((i * (i + 1)) + i)
+		n := (i * (i + 1)) + i
 		row, err := q.CreateInventory(context.Background(), database.CreateInventoryParams{
 			InStock: n,
 			Orderable: sql.NullInt32{
@@ -201,7 +204,7 @@ func inventories(nInventories int, account database.CreateAccountRow, q *databas
 }
 
 func items(
-	nItems int,
+	nItems int32,
 	group *database.CreateGroupRow,
 	inventory *database.CreateInventoryRow,
 	account database.CreateAccountRow,
@@ -212,7 +215,7 @@ func items(
 	}
 	rows := []database.CreateItemRow{}
 	for i := range nItems {
-		n := int32((i * 100) + 99)
+		n := (i * 100) + 99
 		params := database.CreateItemParams{
 			Description: sql.NullString{
 				String: fmt.Sprintf("Test item description %d", i),
