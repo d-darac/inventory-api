@@ -35,7 +35,7 @@ func TestUnitMapCreateGroupParams(t *testing.T) {
 	cp := CreateGroupParams{
 		Description: &desc,
 		Name:        name,
-		ParentGroup: &parent,
+		ParentGroup: func() *string { s := parent.String(); return &s }(),
 	}
 
 	dbp := MapCreateGroupParams(Create{AccountId: acc, RequestParams: cp})
@@ -47,6 +47,9 @@ func TestUnitMapCreateGroupParams(t *testing.T) {
 	}
 	if (!dbp.Description.Valid) || dbp.Description.String != desc {
 		t.Fatalf("expected description %s, got %s", desc, dbp.Description.String)
+	}
+	if (!dbp.ParentID.Valid) || dbp.ParentID.UUID != parent {
+		t.Fatalf("expected parent id %v, got %v", parent, dbp.ParentID.UUID)
 	}
 }
 
