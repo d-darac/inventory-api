@@ -129,7 +129,7 @@ func (h *InventoriesHandler) ListItems(w http.ResponseWriter, r *http.Request) {
 			CreatedAt:        params.CreatedAt,
 			Description:      params.Description,
 			Group:            params.Group,
-			Inventory:        &inventoryId,
+			Inventory:        func() *string { s := inventoryId.String(); return &s }(),
 			Name:             params.Name,
 			PriceAmount:      params.PriceAmount,
 			PriceCurrency:    params.PriceCurrency,
