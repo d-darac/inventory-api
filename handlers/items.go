@@ -46,6 +46,22 @@ func (h *ItemsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if params.Group != nil {
+		_, err := h.Groups.Get(groups.Get{AccountId: accountId, GroupId: uuid.MustParse(*params.Group)})
+		if err != nil {
+			api.ResError(w, err)
+			return
+		}
+	}
+
+	if params.Inventory != nil {
+		_, err := h.Inventories.Get(inventories.Get{AccountId: accountId, InventoryId: uuid.MustParse(*params.Inventory)})
+		if err != nil {
+			api.ResError(w, err)
+			return
+		}
+	}
+
 	item, err := h.Items.Create(items.Create{AccountId: accountId, RequestParams: params})
 	if err != nil {
 		api.ResError(w, err)
@@ -163,6 +179,22 @@ func (h *ItemsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if errs := h.validator.ValidateRequestParams(params); errs != nil {
 		api.ResErrorList(w, errs)
 		return
+	}
+
+	if params.Group != nil {
+		_, err := h.Groups.Get(groups.Get{AccountId: accountId, GroupId: uuid.MustParse(*params.Group)})
+		if err != nil {
+			api.ResError(w, err)
+			return
+		}
+	}
+
+	if params.Inventory != nil {
+		_, err := h.Inventories.Get(inventories.Get{AccountId: accountId, InventoryId: uuid.MustParse(*params.Inventory)})
+		if err != nil {
+			api.ResError(w, err)
+			return
+		}
 	}
 
 	item, err := h.Items.Update(items.Update{
