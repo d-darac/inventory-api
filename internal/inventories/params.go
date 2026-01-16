@@ -2,13 +2,12 @@ package inventories
 
 import (
 	"github.com/d-darac/inventory-assets/database"
-	"github.com/google/uuid"
 )
 
 type CreateInventoryParams struct {
-	InStock   int32     `json:"in_stock" validate:"required"`
-	Item      uuid.UUID `json:"item" validate:"required,uuid"`
-	Orderable *int32    `json:"orderable" validate:"omitnil"`
+	InStock   int32  `json:"in_stock" validate:"required"`
+	Item      string `json:"item" validate:"required,uuid"`
+	Orderable *int32 `json:"orderable" validate:"omitnil"`
 }
 
 type ListInventoriesParams struct {
@@ -25,7 +24,7 @@ type ListItemsParams struct {
 	Active        *bool               `json:"active" validate:"omitnil"`
 	CreatedAt     *database.TimeRange `json:"created_at" validate:"omitnil"`
 	Description   *string             `json:"description" validate:"omitnil"`
-	Group         *uuid.UUID          `json:"group" validate:"omitnil"`
+	Group         *string             `json:"group" validate:"omitnil,uuid"`
 	Name          *string             `json:"name" validate:"omitnil"`
 	PriceAmount   *int32              `json:"price_amount" validate:"omitnil"`
 	PriceCurrency *database.Currency  `json:"price_currency" validate:"omitnil,currency"`

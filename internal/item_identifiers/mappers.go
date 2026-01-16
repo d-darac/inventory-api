@@ -3,6 +3,7 @@ package itemidentifiers
 import (
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
+	"github.com/google/uuid"
 )
 
 func MapCreateItemIdentifiersParams(create Create) database.CreateItemIdentifierParams {
@@ -11,7 +12,7 @@ func MapCreateItemIdentifiersParams(create Create) database.CreateItemIdentifier
 		Ean:       api.NullString(create.RequestParams.Ean),
 		Gtin:      api.NullString(create.RequestParams.Gtin),
 		Isbn:      api.NullString(create.RequestParams.Isbn),
-		ItemID:    create.RequestParams.Item,
+		ItemID:    uuid.MustParse(create.RequestParams.Item),
 		Jan:       api.NullString(create.RequestParams.Jan),
 		Mpn:       api.NullString(create.RequestParams.Mpn),
 		Nsn:       api.NullString(create.RequestParams.Nsn),

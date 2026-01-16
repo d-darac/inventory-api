@@ -2,7 +2,6 @@ package itemidentifiers
 
 import (
 	"github.com/d-darac/inventory-assets/database"
-	"github.com/google/uuid"
 )
 
 type CreateItemIdentifiersParams struct {
@@ -15,7 +14,7 @@ type CreateItemIdentifiersParams struct {
 	Upc    *string   `json:"upc" validate:"omitnil"`
 	Qr     *string   `json:"qr" validate:"omitnil"`
 	Sku    *string   `json:"sku" validate:"omitnil"`
-	Item   uuid.UUID `json:"item" validate:"required,uuid"`
+	Item   string    `json:"item" validate:"required,uuid"`
 	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=item"`
 }
 
