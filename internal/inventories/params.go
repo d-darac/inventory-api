@@ -6,7 +6,6 @@ import (
 
 type CreateInventoryParams struct {
 	InStock   int32  `json:"in_stock" validate:"required"`
-	Item      string `json:"item" validate:"required,uuid"`
 	Orderable *int32 `json:"orderable" validate:"omitnil"`
 }
 
