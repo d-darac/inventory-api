@@ -62,10 +62,68 @@ func (h *ItemsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if params.GroupData != nil {
+		group, err := h.Groups.Create(groups.Create{
+			AccountId: accountId,
+			RequestParams: groups.CreateGroupParams{
+				Description: params.GroupData.Description,
+				Name:        params.GroupData.Name,
+				ParentGroup: params.GroupData.ParentGroup,
+			},
+		})
+		if err != nil {
+			api.ResError(w, err)
+			return
+		}
+		groupId := group.ID.String()
+		params.Group = &groupId
+	}
+
+	if params.InventoryData != nil {
+		inventory, err := h.Inventories.Create(inventories.Create{
+			AccountId: accountId,
+			RequestParams: inventories.CreateInventoryParams{
+				InStock:   params.InventoryData.InStock,
+				Orderable: params.InventoryData.Orderable,
+			},
+		})
+		if err != nil {
+			api.ResError(w, err)
+			return
+		}
+		inventoryId := inventory.ID.String()
+		params.Inventory = &inventoryId
+	}
+
 	item, err := h.Items.Create(items.Create{AccountId: accountId, RequestParams: params})
 	if err != nil {
 		api.ResError(w, err)
 		return
+	}
+
+	if params.IdentifiersData != nil {
+		itemIdentifier, err := h.ItemIdentifiers.Create(itemidentifiers.Create{
+			AccountId: accountId,
+			RequestParams: itemidentifiers.CreateItemIdentifiersParams{
+				Ean:  params.IdentifiersData.Ean,
+				Gtin: params.IdentifiersData.Gtin,
+				Isbn: params.IdentifiersData.Isbn,
+				Jan:  params.IdentifiersData.Jan,
+				Mpn:  params.IdentifiersData.Mpn,
+				Nsn:  params.IdentifiersData.Nsn,
+				Upc:  params.IdentifiersData.Upc,
+				Qr:   params.IdentifiersData.Qr,
+				Sku:  params.IdentifiersData.Sku,
+				Item: item.ID.String(),
+			},
+		})
+		if err != nil {
+			api.ResError(w, err)
+			return
+		}
+		item.Identifiers = api.Expandable{
+			ID: api.NullUUID(itemIdentifier.ID),
+		}
 	}
 
 	if err := h.expandFields(params.Expand, item, accountId); err != nil {
