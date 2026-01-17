@@ -102,7 +102,6 @@ func TestIntegrationCreate(t *testing.T) {
 		t.Fatalf("couldn't open database: %v", err)
 	}
 	defer db.Close()
-	defer db.Exec("TRUNCATE accounts CASCADE;")
 
 	if err := db.Ping(); err != nil {
 		t.Fatalf("couldn't connect to database: %v", err)
@@ -120,38 +119,71 @@ func TestIntegrationCreate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create test account: %v", err)
 	}
+	defer db.Exec("DELETE FROM accounts WHERE id = $1;", acc.ID)
 
 	s := NewGroupsService(q)
-	name := "test-group"
-	desc := "description"
+	parentName := "test-group-parent"
+	parentDesc := "parent-description"
+	childName := "test-group-child"
+	childDesc := "child-description"
 
-	cp := CreateGroupParams{
-		Description: &desc,
-		Name:        name,
+	parentCp := CreateGroupParams{
+		Description: &parentDesc,
+		Name:        parentName,
 	}
-
-	group, err := s.Create(Create{AccountId: acc.ID, RequestParams: cp})
+	parentGroup, err := s.Create(Create{AccountId: acc.ID, RequestParams: parentCp})
 	if err != nil {
 		t.Fatalf("couldn't create test group: %v", err)
 	}
-
-	if group.Name != name {
-		t.Fatalf("expected name %v, got %v", name, group.Name)
+	if parentGroup.Name != parentName {
+		t.Fatalf("expected name %v, got %v", parentName, parentGroup.Name)
 	}
-	if (!group.Description.Valid) || group.Description.String != desc {
-		t.Fatalf("expected description %s, got %s", desc, group.Description.String)
+	if (!parentGroup.Description.Valid) || parentGroup.Description.String != parentDesc {
+		t.Fatalf("expected description %s, got %s", parentDesc, parentGroup.Description.String)
 	}
 
-	row, err := q.GetGroup(context.Background(), database.GetGroupParams{ID: *group.ID, AccountID: acc.ID})
+	parentGroupRow, err := q.GetGroup(context.Background(), database.GetGroupParams{ID: *parentGroup.ID, AccountID: acc.ID})
 	if err != nil {
 		t.Fatalf("error retrieving group: %v", err)
 	}
-
-	if row.Name != name {
-		t.Fatalf("expected name %v, got %v", name, row.Name)
+	if parentGroupRow.Name != parentName {
+		t.Fatalf("expected name %v, got %v", parentName, parentGroupRow.Name)
 	}
-	if (!row.Description.Valid) || row.Description.String != desc {
-		t.Fatalf("expected description %s, got %s", desc, row.Description.String)
+	if (!parentGroupRow.Description.Valid) || parentGroupRow.Description.String != parentDesc {
+		t.Fatalf("expected description %s, got %s", parentDesc, parentGroupRow.Description.String)
+	}
+
+	childCp := CreateGroupParams{
+		Description: &childDesc,
+		Name:        childName,
+		ParentGroup: func() *string { s := parentGroupRow.ID.String(); return &s }(),
+	}
+	childGroup, err := s.Create(Create{AccountId: acc.ID, RequestParams: childCp})
+	if err != nil {
+		t.Fatalf("couldn't create test group: %v", err)
+	}
+	if childGroup.Name != childName {
+		t.Fatalf("expected name %v, got %v", childName, childGroup.Name)
+	}
+	if (!childGroup.Description.Valid) || childGroup.Description.String != childDesc {
+		t.Fatalf("expected description %s, got %s", childDesc, childGroup.Description.String)
+	}
+	if (!childGroup.ParentGroup.ID.Valid) || childGroup.ParentGroup.ID.UUID != *parentGroup.ID {
+		t.Fatalf("expected parent group %v, got %v", parentGroup.ID, childGroup.ParentGroup.ID.UUID)
+	}
+
+	childGroupRow, err := q.GetGroup(context.Background(), database.GetGroupParams{ID: *childGroup.ID, AccountID: acc.ID})
+	if err != nil {
+		t.Fatalf("error retrieving group: %v", err)
+	}
+	if childGroupRow.Name != childName {
+		t.Fatalf("expected name %v, got %v", childName, childGroupRow.Name)
+	}
+	if (!childGroupRow.Description.Valid) || childGroupRow.Description.String != childDesc {
+		t.Fatalf("expected description %s, got %s", childDesc, childGroupRow.Description.String)
+	}
+	if (!childGroupRow.ParentGroup.Valid) || childGroupRow.ParentGroup.UUID != parentGroupRow.ID {
+		t.Fatalf("expected parent group %v, got %s", parentGroupRow.ID, childGroupRow.ParentGroup.UUID)
 	}
 }
 
@@ -164,7 +196,6 @@ func TestIntegrationDelete(t *testing.T) {
 		t.Fatalf("couldn't open database: %v", err)
 	}
 	defer db.Close()
-	defer db.Exec("TRUNCATE accounts CASCADE;")
 
 	if err := db.Ping(); err != nil {
 		t.Fatalf("couldn't connect to database: %v", err)
@@ -182,6 +213,7 @@ func TestIntegrationDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create test account: %v", err)
 	}
+	defer db.Exec("DELETE FROM accounts WHERE id = $1;", acc.ID)
 
 	s := NewGroupsService(q)
 	name := "test-group"
@@ -219,7 +251,6 @@ func TestIntegrationList(t *testing.T) {
 		t.Fatalf("couldn't open database: %v", err)
 	}
 	defer db.Close()
-	defer db.Exec("TRUNCATE accounts CASCADE;")
 
 	if err := db.Ping(); err != nil {
 		t.Fatalf("couldn't connect to database: %v", err)
@@ -237,6 +268,7 @@ func TestIntegrationList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create test account: %v", err)
 	}
+	defer db.Exec("DELETE FROM accounts WHERE id = $1;", acc.ID)
 
 	s := NewGroupsService(q)
 	name := "test-group"
@@ -293,7 +325,6 @@ func TestIntegrationRetrieve(t *testing.T) {
 		t.Fatalf("couldn't open database: %v", err)
 	}
 	defer db.Close()
-	defer db.Exec("TRUNCATE accounts CASCADE;")
 
 	if err := db.Ping(); err != nil {
 		t.Fatalf("couldn't connect to database: %v", err)
@@ -311,6 +342,7 @@ func TestIntegrationRetrieve(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create test account: %v", err)
 	}
+	defer db.Exec("DELETE FROM accounts WHERE id = $1;", acc.ID)
 
 	s := NewGroupsService(q)
 	name := "test-group"
@@ -367,7 +399,6 @@ func TestIntegrationUpdate(t *testing.T) {
 		t.Fatalf("couldn't open database: %v", err)
 	}
 	defer db.Close()
-	defer db.Exec("TRUNCATE accounts CASCADE;")
 
 	if err := db.Ping(); err != nil {
 		t.Fatalf("couldn't connect to database: %v", err)
@@ -403,6 +434,7 @@ func TestIntegrationUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't create test group: %v", err)
 	}
+	defer db.Exec("DELETE FROM accounts WHERE id = $1;", acc.ID)
 
 	up := UpdateGroupParams{
 		Name:        &updatedName,
