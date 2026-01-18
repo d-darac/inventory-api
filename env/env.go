@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type env struct {
+type Env struct {
 	DB_URL        string
 	HOST          string
 	IV            string
@@ -18,7 +18,7 @@ type env struct {
 	TLS_KEY_PATH  string
 }
 
-func GetEnv() env {
+func GetEnv() Env {
 	platform, ok := os.LookupEnv("PLATFORM")
 	if !ok || platform == "dev" {
 		if err := godotenv.Load(); err != nil {
@@ -64,7 +64,7 @@ func GetEnv() env {
 		os.Exit(1)
 	}
 
-	return env{
+	return Env{
 		DB_URL:        dbUrl,
 		HOST:          host,
 		IV:            iv,
