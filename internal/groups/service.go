@@ -31,6 +31,11 @@ type Get struct {
 	OmitBase      bool
 }
 
+type ListByIds struct {
+	AccountId     uuid.UUID
+	RequestParams ListGroupsByIdsParams
+}
+
 type List struct {
 	AccountId     uuid.UUID
 	RequestParams ListGroupsParams
@@ -108,6 +113,34 @@ func (s *GroupsService) Get(get Get) (*Group, error) {
 	}
 
 	return group, nil
+}
+
+func (s *GroupsService) ListByIds(list ListByIds) (groups []*Group, err error) {
+	params := database.ListGroupsByIdsParams{
+		AccountID: list.AccountId,
+		Ids:       list.RequestParams.Ids,
+	}
+
+	rows, err := s.Db.ListGroupsByIds(context.Background(), params)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return groups, nil
+		}
+		return
+	}
+
+	for _, row := range rows {
+		groups = append(groups, &Group{
+			ID:          &row.ID,
+			CreatedAt:   &row.CreatedAt,
+			UpdatedAt:   &row.UpdatedAt,
+			Description: str.NullString(row.Description),
+			Name:        row.Name,
+			ParentGroup: api.Expandable{ID: row.ParentGroup},
+		})
+	}
+
+	return
 }
 
 func (s *GroupsService) List(list List) (groups []*Group, hasMore bool, err error) {
