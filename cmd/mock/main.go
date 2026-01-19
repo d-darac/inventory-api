@@ -49,7 +49,17 @@ func main() {
 		exitWithErr(handleInventories(cfg, args...))
 	case "items":
 		exitWithErr(handleItems(cfg, args...))
+	case "wipeall":
+		exitWithErr(handleWipeAll(cfg))
+	case "wipe":
+		exitWithErr(handleWipe(cfg, args...))
+	case "help":
+		exitWithErr(handleHelp(args...))
+	default:
+		exitWithErr(fmt.Errorf("unknown command: %s\n\nrun command 'help' for more information", cmd))
 	}
+
+	fmt.Println()
 }
 
 func setup() (*sql.DB, env.Env, error) {
