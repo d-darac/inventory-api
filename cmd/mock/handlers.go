@@ -167,7 +167,7 @@ func handleInventories(cfg cfg, args ...string) error {
 		return err
 	}
 
-	inventories, err := createInventories(int32(nInventories), account, cfg.q) // #nosec G115
+	inventories, err := createInventories(int32(nInventories), account, cfg.q)
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func handleItems(cfg cfg, args ...string) error {
 		}
 	}
 
-	items, err := createItems(int32(nItems), group, inventory, account, cfg.q) // #nosec G115
+	items, err := createItems(int32(nItems), group, inventory, account, cfg.q)
 	if err != nil {
 		return err
 	}
