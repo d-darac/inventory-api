@@ -24,19 +24,22 @@ func checkAccountExists(cfg cfg, account uuid.UUID) error {
 	return nil
 }
 
-func createAccount(user uuid.UUID, q *database.Queries) (*database.CreateAccountRow, error) {
+func createAccount(user *uuid.UUID, q *database.Queries) (*database.CreateAccountRow, error) {
 	n := time.Now().UnixNano()
-	account, err := q.CreateAccount(context.Background(), database.CreateAccountParams{
+	params := database.CreateAccountParams{
 		Country: database.CountryIE,
 		Nickname: sql.NullString{
 			String: fmt.Sprintf("Test Account %d", n),
 			Valid:  true,
 		},
-		OwnerID: uuid.NullUUID{
-			UUID:  user,
+	}
+	if user != nil {
+		params.OwnerID = uuid.NullUUID{
+			UUID:  *user,
 			Valid: true,
-		},
-	})
+		}
+	}
+	account, err := q.CreateAccount(context.Background(), params)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create test account: %v", err)
 	}
