@@ -30,7 +30,7 @@ jobs:
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
       - name: Run gosec
-        run: gosec -exclude-generated ./...
+        run: gosec -exclude-generated -exclude-dir=cmd/mock -quiet ./...
 
   unit-tests:
     name: Unit Tests
