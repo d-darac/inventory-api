@@ -82,7 +82,7 @@ func handleAll(cfg cfg) error {
 
 func handleGroups(cfg cfg, args ...string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("Usage: cli groups COUNT ACCOUNT [ARG...]")
+		return fmt.Errorf("usage: cli groups COUNT ACCOUNT [ARG...]")
 	}
 
 	nGroups, err := strconv.Atoi(args[0])
@@ -147,7 +147,7 @@ func handleGroups(cfg cfg, args ...string) error {
 
 func handleInventories(cfg cfg, args ...string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("Usage: cli inventories COUNT ACCOUNT")
+		return fmt.Errorf("usage: cli inventories COUNT ACCOUNT")
 	}
 
 	nInventories, err := strconv.Atoi(args[0])
@@ -167,7 +167,7 @@ func handleInventories(cfg cfg, args ...string) error {
 		return err
 	}
 
-	inventories, err := createInventories(int32(nInventories), account, cfg.q)
+	inventories, err := createInventories(int32(nInventories), account, cfg.q) // #nosec G115
 	if err != nil {
 		return err
 	}
@@ -184,7 +184,7 @@ func handleInventories(cfg cfg, args ...string) error {
 
 func handleItems(cfg cfg, args ...string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("Usage: cli items COUNT ACCOUNT [ARG...]")
+		return fmt.Errorf("usage: cli items COUNT ACCOUNT [ARG...]")
 	}
 
 	nItems, err := strconv.Atoi(args[0])
@@ -244,7 +244,7 @@ func handleItems(cfg cfg, args ...string) error {
 		}
 	}
 
-	items, err := createItems(int32(nItems), group, inventory, account, cfg.q)
+	items, err := createItems(int32(nItems), group, inventory, account, cfg.q) // #nosec G115
 	if err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func handleWipeAll(cfg cfg) error {
 
 func handleWipe(cfg cfg, args ...string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("Usage: cli wipe ACCOUNT...")
+		return fmt.Errorf("usage: cli wipe ACCOUNT...")
 	}
 	tx, err := cfg.db.Begin()
 	if err != nil {
