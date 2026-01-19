@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 
@@ -16,17 +17,7 @@ func handleAll(cfg cfg) error {
 	defer tx.Rollback()
 	qtx := cfg.q.WithTx(tx)
 
-	user, err := createUser(qtx)
-	if err != nil {
-		return err
-	}
-
-	account, err := createAccount(user.ID, qtx)
-	if err != nil {
-		return err
-	}
-
-	err = createAccountUserReference(account.ID, user.ID, qtx)
+	account, err := createAccount(nil, qtx)
 	if err != nil {
 		return err
 	}
@@ -79,7 +70,6 @@ func handleAll(cfg cfg) error {
 
 	fmt.Println("----------------------------------------------------------------")
 	fmt.Printf("Api Key:             %s\n", *apiKey)
-	fmt.Printf("User ID:             %s\n", user.ID)
 	fmt.Printf("Account ID:          %s\n", account.ID)
 	fmt.Printf("Group ID:            %s\n", childGroups[0].ID)
 	fmt.Printf("Inventory ID:        %s\n", inventories[0].ID)
@@ -92,7 +82,7 @@ func handleAll(cfg cfg) error {
 
 func handleGroups(cfg cfg, args ...string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: cli groups <n_groups> <account_id> [...args]")
+		return fmt.Errorf("Usage: cli groups COUNT ACCOUNT [ARG...]")
 	}
 
 	nGroups, err := strconv.Atoi(args[0])
@@ -125,6 +115,8 @@ func handleGroups(cfg cfg, args ...string) error {
 				return err
 			}
 			parentGroup = &id
+		} else {
+			return fmt.Errorf("unknown argument: %s", key)
 		}
 	}
 
@@ -155,7 +147,7 @@ func handleGroups(cfg cfg, args ...string) error {
 
 func handleInventories(cfg cfg, args ...string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: cli inventories <n_inventories> <account_id>")
+		return fmt.Errorf("Usage: cli inventories COUNT ACCOUNT")
 	}
 
 	nInventories, err := strconv.Atoi(args[0])
@@ -192,7 +184,7 @@ func handleInventories(cfg cfg, args ...string) error {
 
 func handleItems(cfg cfg, args ...string) error {
 	if len(args) < 2 {
-		return fmt.Errorf("usage: cli items <n_items> <account_id> [...args]")
+		return fmt.Errorf("Usage: cli items COUNT ACCOUNT [ARG...]")
 	}
 
 	nItems, err := strconv.Atoi(args[0])
@@ -231,6 +223,8 @@ func handleItems(cfg cfg, args ...string) error {
 				return err
 			}
 			inventory = &id
+		default:
+			return fmt.Errorf("unknown argument: %s", key)
 		}
 	}
 
@@ -261,6 +255,144 @@ func handleItems(cfg cfg, args ...string) error {
 	}
 
 	printIDs(ids)
+
+	return nil
+}
+
+func handleWipeAll(cfg cfg) error {
+	tx, err := cfg.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare("DELETE FROM accounts;")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	stmt2, err := tx.Prepare("DELETE FROM users;")
+	if err != nil {
+		return err
+	}
+	defer stmt2.Close()
+
+	if _, err := stmt.Exec(); err != nil {
+		return err
+	}
+	if _, err := stmt2.Exec(); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	fmt.Println("Database wiped!")
+	return nil
+}
+
+func handleWipe(cfg cfg, args ...string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("Usage: cli wipe ACCOUNT...")
+	}
+	tx, err := cfg.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	accStmt := make(map[uuid.UUID]*sql.Stmt)
+	for _, arg := range args {
+		account, err := uuid.Parse(arg)
+		if err != nil {
+			return err
+		}
+		if err := checkAccountExists(cfg, account); err != nil {
+			return err
+		}
+		stmt, err := tx.Prepare("DELETE FROM accounts WHERE id = $1;")
+		if err != nil {
+			return err
+		}
+		accStmt[account] = stmt
+	}
+
+	for account, stmt := range accStmt {
+		if _, err := stmt.Exec(account); err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	fmt.Println("Database wiped!")
+	return nil
+}
+
+func handleHelp(args ...string) error {
+	if len(args) > 0 {
+		topic := args[0]
+		switch topic {
+		case "all":
+			fmt.Println("Usage: cli all")
+			fmt.Println()
+			fmt.Println("Create all resources")
+			return nil
+		case "groups":
+			fmt.Println("Usage: cli groups COUNT ACCOUNT [ARG...]")
+			fmt.Println()
+			fmt.Println("Create COUNT groups for a specified ACCOUNT")
+			fmt.Println()
+			fmt.Println("Optional Arguments:")
+			fmt.Println("  group=GROUP_ID: use to assign groups to a specific parent group")
+			return nil
+		case "inventories":
+			fmt.Println("Usage: cli inventories COUNT ACCOUNT")
+			fmt.Println()
+			fmt.Println("Create COUNT inventories for a specified ACCOUNT")
+			return nil
+		case "items":
+			fmt.Println("Usage: cli items COUNT ACCOUNT [ARG...]")
+			fmt.Println()
+			fmt.Println("Create COUNT items for a specified ACCOUNT")
+			fmt.Println()
+			fmt.Println("Optional Arguments:")
+			fmt.Println("  group=GROUP_ID:         use to assign items to a specific group")
+			fmt.Println("  inventory=INVENTORY_ID: use to assign items to a specific inventory")
+			return nil
+		case "wipeall":
+			fmt.Println("Usage: cli wipeall")
+			fmt.Println()
+			fmt.Println("Wipe the database of all records")
+			return nil
+		case "wipe":
+			fmt.Println("Usage: cli wipe ACCOUNT...")
+			fmt.Println()
+			fmt.Println("Wipe the database of all records for a specified list of accounts")
+			return nil
+		case "help":
+			fmt.Println("Usage: cli help [COMMAND]")
+			fmt.Println()
+			fmt.Println("Help about the command")
+			return nil
+		default:
+			return fmt.Errorf("unknown help topic: %s", topic)
+		}
+	}
+
+	fmt.Println("Usage: cli COMMAND [ARG...]")
+	fmt.Println()
+	fmt.Println("Available Commands:")
+	fmt.Println("  all:         create all resources")
+	fmt.Println("  groups:      create groups for a specific account")
+	fmt.Println("  inventories: create inventories for a specific account")
+	fmt.Println("  items:       create items for a specific account")
+	fmt.Println("  wipeall:     delete all records in the database")
+	fmt.Println("  wipe:        delete all records for a specific account")
 
 	return nil
 }
