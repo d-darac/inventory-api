@@ -190,11 +190,36 @@ func (h *GroupsHandler) expandFields(fields *[]string, group *groups.Group, acco
 	return nil
 }
 
-func (h *GroupsHandler) expandFieldsList(fields *[]string, groups []*groups.Group, accountId uuid.UUID) error {
-	for _, g := range groups {
-		if err := h.expandFields(fields, g, accountId); err != nil {
+func (h *GroupsHandler) expandFieldsList(fields *[]string, grps []*groups.Group, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(*fields, "parent_group") {
+		ids := make([]uuid.UUID, 0, len(grps))
+
+		withNonNillParentGroup := make([]*groups.Group, 0)
+		for _, g := range grps {
+			if g.ParentGroup.ID.Valid {
+				ids = append(ids, g.ParentGroup.ID.UUID)
+				withNonNillParentGroup = append(withNonNillParentGroup, g)
+			}
+		}
+
+		parentGroups, err := h.Groups.ListByIds(groups.ListByIds{
+			AccountId: accountId,
+			RequestParams: groups.ListGroupsByIdsParams{
+				Ids: ids,
+			},
+		})
+		if err != nil {
 			return err
 		}
+
+		for _, g := range withNonNillParentGroup {
+			for _, pg := range parentGroups {
+				if *pg.ID == g.ParentGroup.ID.UUID {
+					g.ParentGroup.Resource = pg
+				}
+			}
+		}
 	}
+
 	return nil
 }
