@@ -295,7 +295,7 @@ func handleWipeAll(cfg cfg) error {
 
 func handleWipe(cfg cfg, args ...string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: cli wipe ACCOUNT...")
+		return fmt.Errorf("usage: cli wipe ACCOUNT... ")
 	}
 	tx, err := cfg.db.Begin()
 	if err != nil {
