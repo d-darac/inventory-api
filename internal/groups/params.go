@@ -2,6 +2,7 @@ package groups
 
 import (
 	"github.com/d-darac/inventory-assets/database"
+	"github.com/google/uuid"
 )
 
 type CreateGroupParams struct {
@@ -9,6 +10,10 @@ type CreateGroupParams struct {
 	Name        string    `json:"name" validate:"required"`
 	ParentGroup *string   `json:"parent_group" validate:"omitnil,uuid"`
 	Expand      *[]string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
+}
+
+type ListGroupsByIdsParams struct {
+	Ids []uuid.UUID
 }
 
 type ListGroupsParams struct {
