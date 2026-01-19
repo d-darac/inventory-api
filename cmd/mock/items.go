@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
@@ -24,6 +25,9 @@ func createItems(
 	for i := range nItems {
 		n := (i * 100) + 99
 		params := database.CreateItemParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 			Description: sql.NullString{
 				String: fmt.Sprintf("Test item description %d", i),
 				Valid:  true,
@@ -60,6 +64,7 @@ func createItems(
 		}
 
 		rows = append(rows, row)
+		time.Sleep(time.Millisecond * 100)
 	}
 	return rows, nil
 }

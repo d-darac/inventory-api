@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
@@ -31,7 +32,10 @@ func createInventories(nInventories int32, account uuid.UUID, q *database.Querie
 	for i := range nInventories {
 		n := (i * (i + 1)) + i
 		row, err := q.CreateInventory(context.Background(), database.CreateInventoryParams{
-			InStock: n,
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			InStock:   n,
 			Orderable: sql.NullInt32{
 				Int32: n,
 				Valid: true,
@@ -42,6 +46,7 @@ func createInventories(nInventories int32, account uuid.UUID, q *database.Querie
 			return nil, fmt.Errorf("couldn't create test inventory: %v", err)
 		}
 		rows = append(rows, row)
+		time.Sleep(time.Millisecond * 100)
 	}
 	return rows, nil
 }

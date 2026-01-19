@@ -8,6 +8,9 @@ package main
 // 		return nil, fmt.Errorf("couldn't hash password: %v", err)
 // 	}
 // 	user, err := q.CreateUser(context.Background(), database.CreateUserParams{
+// 		ID:             uuid.New(),
+// 		CreatedAt:      time.Now(),
+// 		UpdatedAt:      time.Now(),
 // 		Email:          fmt.Sprintf("email_%d@test.com", n),
 // 		HashedPassword: hashedPass,
 // 		Name: sql.NullString{

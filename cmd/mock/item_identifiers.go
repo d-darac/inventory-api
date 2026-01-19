@@ -19,6 +19,9 @@ func createItemIdentifiers(items []uuid.UUID, account uuid.UUID, q *database.Que
 	for _, item := range items {
 		n := time.Now().UnixNano()
 		row, err := q.CreateItemIdentifier(context.Background(), database.CreateItemIdentifierParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 			Sku: sql.NullString{
 				String: fmt.Sprintf("%d", n),
 				Valid:  true,
@@ -30,6 +33,7 @@ func createItemIdentifiers(items []uuid.UUID, account uuid.UUID, q *database.Que
 			return nil, fmt.Errorf("couldn't create test item identifiers: %v", err)
 		}
 		rows = append(rows, row)
+		time.Sleep(time.Millisecond * 100)
 	}
 	return rows, nil
 }

@@ -27,7 +27,10 @@ func checkAccountExists(cfg cfg, account uuid.UUID) error {
 func createAccount(user *uuid.UUID, q *database.Queries) (*database.CreateAccountRow, error) {
 	n := time.Now().UnixNano()
 	params := database.CreateAccountParams{
-		Country: database.CountryIE,
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Country:   database.CountryIE,
 		Nickname: sql.NullString{
 			String: fmt.Sprintf("Test Account %d", n),
 			Valid:  true,

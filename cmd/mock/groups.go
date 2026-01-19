@@ -33,6 +33,9 @@ func createGroups(nGroups int, parentGroup *uuid.UUID, account uuid.UUID, q *dat
 	for range nGroups {
 		n := time.Now().UnixNano()
 		params := database.CreateGroupParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 			Name:      fmt.Sprintf("Test Group %d", n),
 			AccountID: account,
 		}
@@ -47,6 +50,7 @@ func createGroups(nGroups int, parentGroup *uuid.UUID, account uuid.UUID, q *dat
 			return nil, fmt.Errorf("couldn't create test group: %v", err)
 		}
 		rows = append(rows, row)
+		time.Sleep(time.Millisecond * 100)
 	}
 	return rows, nil
 }

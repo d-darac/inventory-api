@@ -19,6 +19,9 @@ func createApiKey(key, iv string, account uuid.UUID, q *database.Queries) (*stri
 	}
 	n := time.Now().UnixNano()
 	_, err = q.CreateApiKey(context.Background(), database.CreateApiKeyParams{
+		ID:             uuid.New(),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 		Name:           fmt.Sprintf("Test Api Key %d", n),
 		Secret:         encryptedApiKey,
 		RedactedSecret: str.RedactString(apiKey, 4),
