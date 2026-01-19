@@ -1,12 +1,19 @@
 package inventories
 
 import (
+	"time"
+
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
+	"github.com/google/uuid"
 )
 
 func MapCreateInventoryParams(create Create) database.CreateInventoryParams {
+	t := time.Now()
 	cip := database.CreateInventoryParams{
+		ID:        uuid.New(),
+		CreatedAt: t,
+		UpdatedAt: t,
 		AccountID: create.AccountId,
 		InStock:   create.RequestParams.InStock,
 		Orderable: api.NullInt32(create.RequestParams.Orderable),
@@ -26,6 +33,7 @@ func MapListInventoriesParams(list List) database.ListInventoriesParams {
 
 func MapUpdateInventoryParams(update Update) database.UpdateInventoryParams {
 	return database.UpdateInventoryParams{
+		UpdatedAt: time.Now(),
 		AccountID: update.AccountId,
 		ID:        update.InventoryId,
 		InStock:   api.NullInt32(update.RequestParams.InStock),

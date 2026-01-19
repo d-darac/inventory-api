@@ -1,13 +1,19 @@
 package items
 
 import (
+	"time"
+
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
 func MapCreateItemParams(create Create) database.CreateItemParams {
+	t := time.Now()
 	cip := database.CreateItemParams{
+		ID:            uuid.New(),
+		CreatedAt:     t,
+		UpdatedAt:     t,
 		AccountID:     create.AccountId,
 		Description:   api.NullString(create.RequestParams.Description),
 		GroupID:       api.NullUUID(nil),
@@ -56,7 +62,9 @@ func MapListItemsParams(list List) database.ListItemsParams {
 }
 
 func MapUpdateItemParams(update Update) database.UpdateItemParams {
+	t := time.Now()
 	uip := database.UpdateItemParams{
+		UpdatedAt:     t,
 		ID:            update.ItemId,
 		AccountID:     update.AccountId,
 		Active:        api.NullBool(update.RequestParams.Active),

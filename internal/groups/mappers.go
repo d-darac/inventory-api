@@ -1,13 +1,19 @@
 package groups
 
 import (
+	"time"
+
 	"github.com/d-darac/inventory-assets/api"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
 func MapCreateGroupParams(create Create) database.CreateGroupParams {
+	t := time.Now()
 	cgp := database.CreateGroupParams{
+		ID:          uuid.New(),
+		CreatedAt:   t,
+		UpdatedAt:   t,
 		AccountID:   create.AccountId,
 		Description: api.NullString(create.RequestParams.Description),
 		Name:        create.RequestParams.Name,
@@ -39,6 +45,7 @@ func MapListGroupsParams(list List) database.ListGroupsParams {
 
 func MapUpdateGroupParams(update Update) database.UpdateGroupParams {
 	ugp := database.UpdateGroupParams{
+		UpdatedAt:   time.Now(),
 		AccountID:   update.AccountId,
 		Description: api.NullString(update.RequestParams.Description),
 		ID:          update.GroupId,
