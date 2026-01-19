@@ -16,7 +16,7 @@ func checkGroupExists(cfg cfg, group uuid.UUID) error {
 	err := row.Scan(dest)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("group with id '%v' not found\n", group)
+			return fmt.Errorf("group with id '%v' not found", group)
 		} else {
 			return err
 		}

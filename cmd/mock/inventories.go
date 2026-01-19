@@ -15,7 +15,7 @@ func checkInventoryExists(cfg cfg, inventory uuid.UUID) error {
 	err := row.Scan(dest)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("inventory with id '%v' not found\n", inventory)
+			return fmt.Errorf("inventory with id '%v' not found", inventory)
 		} else {
 			return err
 		}

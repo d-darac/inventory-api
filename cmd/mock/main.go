@@ -71,10 +71,10 @@ func setup() (*sql.DB, env.Env, error) {
 	}
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
-		return nil, env.Env{}, fmt.Errorf("couldn't open database: %v\n", err)
+		return nil, env.Env{}, fmt.Errorf("couldn't open database: %v", err)
 	}
 	if err := db.Ping(); err != nil {
-		return nil, env.Env{}, fmt.Errorf("couldn't connect to database: %v\n", err)
+		return nil, env.Env{}, fmt.Errorf("couldn't connect to database: %v", err)
 	}
 	return db, e, nil
 }

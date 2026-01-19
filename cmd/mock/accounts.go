@@ -16,7 +16,7 @@ func checkAccountExists(cfg cfg, account uuid.UUID) error {
 	err := row.Scan(dest)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("account with id '%v' not found\n", account)
+			return fmt.Errorf("account with id '%v' not found", account)
 		} else {
 			return err
 		}
