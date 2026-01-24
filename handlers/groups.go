@@ -212,14 +212,16 @@ func (h *GroupsHandler) expandFieldsList(fields *[]string, grps []*groups.Group,
 			return err
 		}
 
+		parentGroupIdsMap := make(map[uuid.UUID]*groups.Group, 0)
+		for _, pg := range parentGroups {
+			parentGroupIdsMap[*pg.ID] = pg
+		}
+
 		for _, g := range withNonNillParentGroup {
-			for _, pg := range parentGroups {
-				if *pg.ID == g.ParentGroup.ID.UUID {
-					g.ParentGroup.Resource = pg
-				}
+			if pg, ok := parentGroupIdsMap[g.ParentGroup.ID.UUID]; ok {
+				g.ParentGroup.Resource = pg
 			}
 		}
 	}
-
 	return nil
 }
