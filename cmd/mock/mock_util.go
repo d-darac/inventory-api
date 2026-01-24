@@ -32,7 +32,7 @@ func printIDs(ids []uuid.UUID) {
 		fmt.Printf("Displaying first %d IDs...\n", n)
 	}
 	for _, item := range ids[:n] {
-		fmt.Printf("Item ID: %v\n", item)
+		fmt.Printf("%v\n", item)
 	}
 	fmt.Println("----------------------------------------------------------------")
 }
