@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
@@ -109,8 +110,12 @@ func TestIntegrationCreate(t *testing.T) {
 
 	q := database.New(db)
 
+	time := time.Now()
 	acc, err := q.CreateAccount(context.Background(), database.CreateAccountParams{
-		Country: database.CountryIE,
+		ID:        uuid.New(),
+		CreatedAt: time,
+		UpdatedAt: time,
+		Country:   database.CountryIE,
 		Nickname: sql.NullString{
 			String: "Test Account",
 			Valid:  true,
@@ -258,8 +263,12 @@ func TestIntegrationList(t *testing.T) {
 
 	q := database.New(db)
 
+	time := time.Now()
 	acc, err := q.CreateAccount(context.Background(), database.CreateAccountParams{
-		Country: database.CountryIE,
+		ID:        uuid.New(),
+		CreatedAt: time,
+		UpdatedAt: time,
+		Country:   database.CountryIE,
 		Nickname: sql.NullString{
 			String: "Test Account",
 			Valid:  true,
