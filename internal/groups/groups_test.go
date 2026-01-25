@@ -263,11 +263,11 @@ func TestIntegrationList(t *testing.T) {
 
 	q := database.New(db)
 
-	time := time.Now()
+	tm := time.Now()
 	acc, err := q.CreateAccount(context.Background(), database.CreateAccountParams{
 		ID:        uuid.New(),
-		CreatedAt: time,
-		UpdatedAt: time,
+		CreatedAt: tm,
+		UpdatedAt: tm,
 		Country:   database.CountryIE,
 		Nickname: sql.NullString{
 			String: "Test Account",
@@ -285,7 +285,11 @@ func TestIntegrationList(t *testing.T) {
 	rows := make([]database.CreateGroupRow, 0, 10)
 
 	for i := range 10 {
+		time := time.Now()
 		grp, err := q.CreateGroup(context.Background(), database.CreateGroupParams{
+			ID:        uuid.New(),
+			CreatedAt: time,
+			UpdatedAt: time,
 			Description: sql.NullString{
 				String: fmt.Sprintf("%s %d", desc, i),
 				Valid:  true,
