@@ -58,25 +58,19 @@ func (s *ItemsService) Create(create Create) (*Item, error) {
 	}
 
 	item := &Item{
-		ID:          &row.ID,
-		CreatedAt:   &row.CreatedAt,
-		UpdatedAt:   &row.UpdatedAt,
-		Active:      row.Active,
-		Description: str.NullString(row.Description),
-		Group:       api.Expandable{ID: row.Group},
-		Identifiers: api.Expandable{},
-		Inventory:   api.Expandable{ID: row.Inventory},
-		Name:        row.Name,
-		PriceAmount: ints.NullInt32{
-			Int32: row.PriceAmount.Int32,
-			Valid: true,
-		},
-		PriceCurrency: currency.NullCurrency{
-			Currency: row.PriceCurrency.Currency,
-			Valid:    true,
-		},
-		Variant: row.Variant,
-		Type:    row.Type,
+		ID:            &row.ID,
+		CreatedAt:     &row.CreatedAt,
+		UpdatedAt:     &row.UpdatedAt,
+		Active:        row.Active,
+		Description:   str.NullString(row.Description),
+		Group:         api.Expandable{ID: row.Group},
+		Identifiers:   api.Expandable{},
+		Inventory:     api.Expandable{ID: row.Inventory},
+		Name:          row.Name,
+		PriceAmount:   ints.NullInt32(row.PriceAmount),
+		PriceCurrency: currency.NullCurrency(row.PriceCurrency),
+		Variant:       row.Variant,
+		Type:          row.Type,
 	}
 
 	return item, nil
@@ -111,22 +105,16 @@ func (s *ItemsService) Get(get Get) (*Item, error) {
 	}
 
 	item := &Item{
-		Active:      row.Active,
-		Description: str.NullString(row.Description),
-		Group:       api.Expandable{ID: row.Group},
-		Identifiers: api.Expandable{ID: row.Identifiers},
-		Inventory:   api.Expandable{ID: row.Inventory},
-		Name:        row.Name,
-		PriceAmount: ints.NullInt32{
-			Int32: row.PriceAmount.Int32,
-			Valid: true,
-		},
-		PriceCurrency: currency.NullCurrency{
-			Currency: row.PriceCurrency.Currency,
-			Valid:    true,
-		},
-		Variant: row.Variant,
-		Type:    row.Type,
+		Active:        row.Active,
+		Description:   str.NullString(row.Description),
+		Group:         api.Expandable{ID: row.Group},
+		Identifiers:   api.Expandable{ID: row.Identifiers},
+		Inventory:     api.Expandable{ID: row.Inventory},
+		Name:          row.Name,
+		PriceAmount:   ints.NullInt32(row.PriceAmount),
+		PriceCurrency: currency.NullCurrency(row.PriceCurrency),
+		Variant:       row.Variant,
+		Type:          row.Type,
 	}
 
 	if !get.OmitBase {
@@ -190,25 +178,19 @@ func (s *ItemsService) List(list List) (items []*Item, hasMore bool, err error) 
 
 	for _, row := range rows {
 		items = append(items, &Item{
-			ID:          &row.ID,
-			CreatedAt:   &row.CreatedAt,
-			UpdatedAt:   &row.UpdatedAt,
-			Active:      row.Active,
-			Description: str.NullString(row.Description),
-			Group:       api.Expandable{ID: row.Group},
-			Identifiers: api.Expandable{ID: row.Identifiers},
-			Inventory:   api.Expandable{ID: row.Inventory},
-			Name:        row.Name,
-			PriceAmount: ints.NullInt32{
-				Int32: row.PriceAmount.Int32,
-				Valid: true,
-			},
-			PriceCurrency: currency.NullCurrency{
-				Currency: row.PriceCurrency.Currency,
-				Valid:    true,
-			},
-			Variant: row.Variant,
-			Type:    row.Type,
+			ID:            &row.ID,
+			CreatedAt:     &row.CreatedAt,
+			UpdatedAt:     &row.UpdatedAt,
+			Active:        row.Active,
+			Description:   str.NullString(row.Description),
+			Group:         api.Expandable{ID: row.Group},
+			Identifiers:   api.Expandable{ID: row.Identifiers},
+			Inventory:     api.Expandable{ID: row.Inventory},
+			Name:          row.Name,
+			PriceAmount:   ints.NullInt32(row.PriceAmount),
+			PriceCurrency: currency.NullCurrency(row.PriceCurrency),
+			Variant:       row.Variant,
+			Type:          row.Type,
 		})
 	}
 
@@ -234,25 +216,19 @@ func (s *ItemsService) Update(update Update) (*Item, error) {
 	}
 
 	item := &Item{
-		ID:          &row.ID,
-		CreatedAt:   &row.CreatedAt,
-		UpdatedAt:   &row.UpdatedAt,
-		Active:      row.Active,
-		Description: str.NullString(row.Description),
-		Group:       api.Expandable{ID: row.Group},
-		Identifiers: api.Expandable{ID: row.Identifiers},
-		Inventory:   api.Expandable{ID: row.Inventory},
-		Name:        row.Name,
-		PriceAmount: ints.NullInt32{
-			Int32: row.PriceAmount.Int32,
-			Valid: true,
-		},
-		PriceCurrency: currency.NullCurrency{
-			Currency: row.PriceCurrency.Currency,
-			Valid:    true,
-		},
-		Variant: row.Variant,
-		Type:    row.Type,
+		ID:            &row.ID,
+		CreatedAt:     &row.CreatedAt,
+		UpdatedAt:     &row.UpdatedAt,
+		Active:        row.Active,
+		Description:   str.NullString(row.Description),
+		Group:         api.Expandable{ID: row.Group},
+		Identifiers:   api.Expandable{ID: row.Identifiers},
+		Inventory:     api.Expandable{ID: row.Inventory},
+		Name:          row.Name,
+		PriceAmount:   ints.NullInt32(row.PriceAmount),
+		PriceCurrency: currency.NullCurrency(row.PriceCurrency),
+		Variant:       row.Variant,
+		Type:          row.Type,
 	}
 
 	return item, nil
