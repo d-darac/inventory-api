@@ -3,6 +3,7 @@ package items
 import (
 	"github.com/d-darac/inventory-api/internal/groups"
 	"github.com/d-darac/inventory-assets/database"
+	"github.com/google/uuid"
 )
 
 type CreateInventoryParams struct {
@@ -34,6 +35,10 @@ type CreateItemParams struct {
 	PriceCurrency   *database.Currency           `json:"price_currency" validate:"omitnil,currency"`
 	Type            database.ItemType            `json:"type" validate:"required,itemtype"`
 	Expand          *[]string                    `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
+}
+
+type ListItemsByIdsParams struct {
+	Ids []uuid.UUID
 }
 
 type ListItemsParams struct {
