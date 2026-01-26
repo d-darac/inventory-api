@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"slices"
 
 	"github.com/d-darac/inventory-api/internal/groups"
 	"github.com/d-darac/inventory-api/middleware"
@@ -173,55 +172,4 @@ func (h *GroupsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.ResJSON(w, http.StatusOK, group)
-}
-
-func (h *GroupsHandler) expandFields(fields *[]string, group *groups.Group, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "parent_group") {
-		getParams := groups.Get{
-			AccountId:     accountId,
-			GroupId:       group.ParentGroup.ID.UUID,
-			RequestParams: groups.RetrieveGroupParams{},
-			OmitBase:      true,
-		}
-		if _, err := api.ExpandField(&group.ParentGroup, h.Groups.Get, getParams); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (h *GroupsHandler) expandFieldsList(fields *[]string, grps []*groups.Group, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "parent_group") {
-		ids := make([]uuid.UUID, 0, len(grps))
-
-		withNonNillParentGroup := make([]*groups.Group, 0)
-		for _, g := range grps {
-			if g.ParentGroup.ID.Valid {
-				ids = append(ids, g.ParentGroup.ID.UUID)
-				withNonNillParentGroup = append(withNonNillParentGroup, g)
-			}
-		}
-
-		parentGroups, err := h.Groups.ListByIds(groups.ListByIds{
-			AccountId: accountId,
-			RequestParams: groups.ListGroupsByIdsParams{
-				Ids: ids,
-			},
-		})
-		if err != nil {
-			return err
-		}
-
-		parentGroupIdsMap := make(map[uuid.UUID]*groups.Group, 0)
-		for _, pg := range parentGroups {
-			parentGroupIdsMap[*pg.ID] = pg
-		}
-
-		for _, g := range withNonNillParentGroup {
-			if pg, ok := parentGroupIdsMap[g.ParentGroup.ID.UUID]; ok {
-				g.ParentGroup.Resource = pg
-			}
-		}
-	}
-	return nil
 }

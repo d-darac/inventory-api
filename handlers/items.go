@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"slices"
 
 	"github.com/d-darac/inventory-api/internal/groups"
 	"github.com/d-darac/inventory-api/internal/inventories"
@@ -276,41 +275,4 @@ func (h *ItemsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.ResJSON(w, http.StatusOK, item)
-}
-
-func (h *ItemsHandler) expandFields(fields *[]string, item *items.Item, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "group") {
-		getParams := groups.Get{
-			AccountId:     accountId,
-			GroupId:       item.Group.ID.UUID,
-			RequestParams: groups.RetrieveGroupParams{},
-			OmitBase:      true,
-		}
-		if _, err := api.ExpandField(&item.Group, h.Groups.Get, getParams); err != nil {
-			return err
-		}
-	}
-	if fields != nil && slices.Contains(*fields, "inventory") {
-		getParams := inventories.Get{
-			AccountId:     accountId,
-			InventoryId:   item.Inventory.ID.UUID,
-			RequestParams: inventories.RetrieveInventoryParams{},
-			OmitBase:      true,
-		}
-		if _, err := api.ExpandField(&item.Inventory, h.Inventories.Get, getParams); err != nil {
-			return err
-		}
-	}
-	if fields != nil && slices.Contains(*fields, "identifiers") {
-		getParams := itemidentifiers.Get{
-			AccountId:         accountId,
-			ItemIdentifiersId: item.Identifiers.ID.UUID,
-			RequestParams:     itemidentifiers.RetrieveItemIdentifiersParams{},
-			OmitBase:          true,
-		}
-		if _, err := api.ExpandField(&item.Identifiers, h.ItemIdentifiers.Get, getParams); err != nil {
-			return err
-		}
-	}
-	return nil
 }

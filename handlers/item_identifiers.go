@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"slices"
 
 	itemidentifiers "github.com/d-darac/inventory-api/internal/item_identifiers"
 	"github.com/d-darac/inventory-api/internal/items"
@@ -180,19 +179,4 @@ func (h *ItemIdentifiersHandler) Update(w http.ResponseWriter, r *http.Request) 
 	}
 
 	api.ResJSON(w, http.StatusOK, itemIdentifiers)
-}
-
-func (h *ItemIdentifiersHandler) expandFields(fields *[]string, itemIdentifiers *itemidentifiers.ItemIdentifiers, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "item") {
-		getParams := items.Get{
-			AccountId:     accountId,
-			ItemId:        itemIdentifiers.Item.ID.UUID,
-			RequestParams: items.RetrieveItemParams{},
-			OmitBase:      true,
-		}
-		if _, err := api.ExpandField(&itemIdentifiers.Item, h.Items.Get, getParams); err != nil {
-			return err
-		}
-	}
-	return nil
 }
