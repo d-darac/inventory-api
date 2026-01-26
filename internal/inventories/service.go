@@ -60,10 +60,7 @@ func (s *InventoriesService) Create(create Create) (*Inventory, error) {
 		CreatedAt: &row.CreatedAt,
 		UpdatedAt: &row.UpdatedAt,
 		InStock:   row.InStock,
-		Orderable: ints.NullInt32{
-			Int32: row.Orderable.Int32,
-			Valid: true,
-		},
+		Orderable: ints.NullInt32(row.Orderable),
 	}
 
 	return inventory, nil
@@ -98,11 +95,8 @@ func (s *InventoriesService) Get(get Get) (*Inventory, error) {
 	}
 
 	inventory := &Inventory{
-		InStock: row.InStock,
-		Orderable: ints.NullInt32{
-			Int32: row.Orderable.Int32,
-			Valid: true,
-		},
+		InStock:   row.InStock,
+		Orderable: ints.NullInt32(row.Orderable),
 	}
 
 	if !get.OmitBase {
@@ -171,10 +165,8 @@ func (s *InventoriesService) List(list List) (inventories []*Inventory, hasMore 
 			CreatedAt: &row.CreatedAt,
 			UpdatedAt: &row.UpdatedAt,
 			InStock:   row.InStock,
-			Orderable: ints.NullInt32{
-				Int32: row.Orderable.Int32,
-				Valid: true,
-			},
+			Orderable: ints.NullInt32(row.Orderable),
+			Reserved:  ints.NullInt32(row.Reserved),
 		})
 	}
 
@@ -204,10 +196,7 @@ func (s *InventoriesService) Update(update Update) (*Inventory, error) {
 		CreatedAt: &row.CreatedAt,
 		UpdatedAt: &row.UpdatedAt,
 		InStock:   row.InStock,
-		Orderable: ints.NullInt32{
-			Int32: row.Orderable.Int32,
-			Valid: true,
-		},
+		Orderable: ints.NullInt32(row.Orderable),
 	}
 
 	return inventory, nil
