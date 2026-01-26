@@ -13,4 +13,5 @@ type Inventory struct {
 	UpdatedAt *time.Time     `json:"updated_at,omitempty"`
 	InStock   int32          `json:"in_stock"`
 	Orderable ints.NullInt32 `json:"orderable"`
+	Reserved  ints.NullInt32 `json:"reserved"`
 }
