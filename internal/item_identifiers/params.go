@@ -22,6 +22,7 @@ type ListItemIdentifiersParams struct {
 	*database.PaginationParams
 	CreatedAt *database.TimeRange `json:"created_at" validate:"omitnil"`
 	UpdatedAt *database.TimeRange `json:"updated_at" validate:"omitnil"`
+	Expand    *[]string           `json:"expand" validate:"omitnil,dive,oneof=item"`
 }
 
 type RetrieveItemIdentifiersParams struct {
