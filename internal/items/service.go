@@ -33,6 +33,11 @@ type Get struct {
 	OmitBase      bool
 }
 
+type ListByIds struct {
+	AccountId     uuid.UUID
+	RequestParams ListItemsByIdsParams
+}
+
 type List struct {
 	AccountId     uuid.UUID
 	RequestParams ListItemsParams
@@ -123,6 +128,41 @@ func (s *ItemsService) Get(get Get) (*Item, error) {
 		item.UpdatedAt = &row.UpdatedAt
 	}
 	return item, nil
+}
+
+func (s *ItemsService) ListByIds(list ListByIds) (items []*Item, err error) {
+	params := database.ListItemsByIdsParams{
+		AccountID: list.AccountId,
+		Ids:       list.RequestParams.Ids,
+	}
+
+	rows, err := s.Db.ListItemsByIds(context.Background(), params)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return items, nil
+		}
+		return
+	}
+
+	for _, row := range rows {
+		items = append(items, &Item{
+			ID:            &row.ID,
+			CreatedAt:     &row.CreatedAt,
+			UpdatedAt:     &row.UpdatedAt,
+			Active:        row.Active,
+			Description:   str.NullString(row.Description),
+			Group:         api.Expandable{ID: row.Group},
+			Identifiers:   api.Expandable{ID: row.Identifiers},
+			Inventory:     api.Expandable{ID: row.Inventory},
+			Name:          row.Name,
+			PriceAmount:   ints.NullInt32(row.PriceAmount),
+			PriceCurrency: currency.NullCurrency(row.PriceCurrency),
+			Variant:       row.Variant,
+			Type:          row.Type,
+		})
+	}
+
+	return
 }
 
 func (s *ItemsService) List(list List) (items []*Item, hasMore bool, err error) {

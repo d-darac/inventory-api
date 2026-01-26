@@ -31,6 +31,11 @@ type Get struct {
 	OmitBase          bool
 }
 
+type ListByIds struct {
+	AccountId     uuid.UUID
+	RequestParams ListItemIdentifiersByIdsParams
+}
+
 type List struct {
 	AccountId     uuid.UUID
 	RequestParams ListItemIdentifiersParams
@@ -119,6 +124,40 @@ func (s *ItemIdentifiersService) Get(get Get) (*ItemIdentifiers, error) {
 		itemIdentifiers.UpdatedAt = &row.UpdatedAt
 	}
 	return itemIdentifiers, nil
+}
+
+func (s *ItemIdentifiersService) ListByIds(list ListByIds) (itemIdentifiers []*ItemIdentifiers, err error) {
+	params := database.ListItemIdentifiersByIdsParams{
+		AccountID: list.AccountId,
+		Ids:       list.RequestParams.Ids,
+	}
+
+	rows, err := s.Db.ListItemIdentifiersByIds(context.Background(), params)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return itemIdentifiers, nil
+		}
+		return
+	}
+
+	for _, row := range rows {
+		itemIdentifiers = append(itemIdentifiers, &ItemIdentifiers{
+			ID:        &row.ID,
+			CreatedAt: &row.CreatedAt,
+			UpdatedAt: &row.UpdatedAt,
+			Ean:       str.NullString(row.Ean),
+			Gtin:      str.NullString(row.Gtin),
+			Isbn:      str.NullString(row.Isbn),
+			Jan:       str.NullString(row.Jan),
+			Mpn:       str.NullString(row.Mpn),
+			Nsn:       str.NullString(row.Nsn),
+			Upc:       str.NullString(row.Upc),
+			Qr:        str.NullString(row.Qr),
+			Sku:       str.NullString(row.Sku),
+		})
+	}
+
+	return
 }
 
 func (s *ItemIdentifiersService) List(list List) (itemIdentifiers []*ItemIdentifiers, hasMore bool, err error) {

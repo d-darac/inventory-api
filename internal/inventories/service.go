@@ -31,6 +31,11 @@ type Get struct {
 	OmitBase      bool
 }
 
+type ListByIds struct {
+	AccountId     uuid.UUID
+	RequestParams ListInventoriesByIdsParams
+}
+
 type List struct {
 	AccountId     uuid.UUID
 	RequestParams ListInventoriesParams
@@ -106,6 +111,34 @@ func (s *InventoriesService) Get(get Get) (*Inventory, error) {
 	}
 
 	return inventory, nil
+}
+
+func (s *InventoriesService) ListByIds(list ListByIds) (inventories []*Inventory, err error) {
+	params := database.ListInventoriesByIdsParams{
+		AccountID: list.AccountId,
+		Ids:       list.RequestParams.Ids,
+	}
+
+	rows, err := s.Db.ListInventoriesByIds(context.Background(), params)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return inventories, nil
+		}
+		return
+	}
+
+	for _, row := range rows {
+		inventories = append(inventories, &Inventory{
+			ID:        &row.ID,
+			CreatedAt: &row.CreatedAt,
+			UpdatedAt: &row.UpdatedAt,
+			InStock:   row.InStock,
+			Orderable: ints.NullInt32(row.Orderable),
+			Reserved:  ints.NullInt32(row.Reserved),
+		})
+	}
+
+	return
 }
 
 func (s *InventoriesService) List(list List) (inventories []*Inventory, hasMore bool, err error) {
