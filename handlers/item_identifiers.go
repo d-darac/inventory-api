@@ -46,7 +46,7 @@ func (h *ItemIdentifiersHandler) Create(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.expandFields(params.Expand, itemIdentifiers, accountId); err != nil {
+	if err := h.ExpandFields(params.Expand, itemIdentifiers, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -97,6 +97,11 @@ func (h *ItemIdentifiersHandler) List(w http.ResponseWriter, r *http.Request) {
 		listRes.HasMore = hasMore
 	}
 
+	if err := h.ExpandFieldsList(params.Expand, itemIdentifiers, accountId); err != nil {
+		api.ResError(w, err)
+		return
+	}
+
 	api.ResJSON(w, http.StatusOK, listRes)
 }
 
@@ -131,7 +136,7 @@ func (h *ItemIdentifiersHandler) Retrieve(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := h.expandFields(params.Expand, itemIdentifiers, accountId); err != nil {
+	if err := h.ExpandFields(params.Expand, itemIdentifiers, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -169,7 +174,7 @@ func (h *ItemIdentifiersHandler) Update(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.expandFields(params.Expand, itemIdentifiers, accountId); err != nil {
+	if err := h.ExpandFields(params.Expand, itemIdentifiers, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}

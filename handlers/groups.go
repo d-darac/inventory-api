@@ -43,7 +43,7 @@ func (h *GroupsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.expandFields(params.Expand, group, accountId); err != nil {
+	if err := h.ExpandFields(params.Expand, group, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -94,7 +94,7 @@ func (h *GroupsHandler) List(w http.ResponseWriter, r *http.Request) {
 		listRes.HasMore = hasMore
 	}
 
-	if err := h.expandFieldsList(params.Expand, groups, accountId); err != nil {
+	if err := h.ExpandFieldsList(params.Expand, groups, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -133,7 +133,7 @@ func (h *GroupsHandler) Retrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.expandFields(params.Expand, group, accountId); err != nil {
+	if err := h.ExpandFields(params.Expand, group, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
@@ -167,7 +167,7 @@ func (h *GroupsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.expandFields(params.Expand, group, accountId); err != nil {
+	if err := h.ExpandFields(params.Expand, group, accountId); err != nil {
 		api.ResError(w, err)
 		return
 	}
