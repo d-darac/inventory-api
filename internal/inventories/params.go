@@ -2,11 +2,16 @@ package inventories
 
 import (
 	"github.com/d-darac/inventory-assets/database"
+	"github.com/google/uuid"
 )
 
 type CreateInventoryParams struct {
 	InStock   int32  `json:"in_stock" validate:"required"`
 	Orderable *int32 `json:"orderable" validate:"omitnil"`
+}
+
+type ListInventoriesByIdsParams struct {
+	Ids []uuid.UUID
 }
 
 type ListInventoriesParams struct {
