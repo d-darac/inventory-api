@@ -6,10 +6,10 @@ import (
 )
 
 type CreateGroupParams struct {
-	Description *string   `json:"description" validate:"omitnil"`
-	Name        string    `json:"name" validate:"required"`
-	ParentGroup *string   `json:"parent_group" validate:"omitnil,uuid"`
-	Expand      *[]string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
+	Description *string  `json:"description" validate:"omitnil"`
+	Name        string   `json:"name" validate:"required"`
+	ParentGroup *string  `json:"parent_group" validate:"omitnil,uuid"`
+	Expand      []string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
 type ListGroupsByIdsParams struct {
@@ -23,18 +23,18 @@ type ListGroupsParams struct {
 	Description *string             `json:"description" validate:"omitnil"`
 	Name        *string             `json:"name" validate:"omitnil"`
 	UpdatedAt   *database.TimeRange `json:"updated_at" validate:"omitnil"`
-	Expand      *[]string           `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
+	Expand      []string            `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
 type RetrieveGroupParams struct {
-	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
+	Expand []string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
 type UpdateGroupParams struct {
-	Description *string   `json:"description" validate:"omitnil"`
-	Name        *string   `json:"name" validate:"omitnil"`
-	ParentGroup *string   `json:"parent_group" validate:"omitnil,uuid"`
-	Expand      *[]string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
+	Description *string  `json:"description" validate:"omitnil"`
+	Name        *string  `json:"name" validate:"omitnil"`
+	ParentGroup *string  `json:"parent_group" validate:"omitnil,uuid"`
+	Expand      []string `json:"expand" validate:"omitnil,dive,oneof=parent_group"`
 }
 
 func NewListGroupsParams() ListGroupsParams {

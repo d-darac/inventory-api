@@ -34,7 +34,7 @@ type CreateItemParams struct {
 	PriceAmount     *int32                       `json:"price_amount" validate:"omitnil"`
 	PriceCurrency   *database.Currency           `json:"price_currency" validate:"omitnil,currency"`
 	Type            database.ItemType            `json:"type" validate:"required,itemtype"`
-	Expand          *[]string                    `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
+	Expand          []string                     `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
 }
 
 type ListItemsByIdsParams struct {
@@ -54,11 +54,11 @@ type ListItemsParams struct {
 	Type          *database.ItemType  `json:"type" validate:"omitnil,itemtype"`
 	UpdatedAt     *database.TimeRange `json:"updated_at" validate:"omitnil"`
 	Variant       *bool               `json:"variant" validate:"omitnil"`
-	Expand        *[]string           `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
+	Expand        []string            `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
 }
 
 type RetrieveItemParams struct {
-	Expand *[]string `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
+	Expand []string `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
 }
 
 type UpdateItemParams struct {
@@ -69,7 +69,7 @@ type UpdateItemParams struct {
 	Name          *string            `json:"name" validate:"omitnil"`
 	PriceAmount   *int32             `json:"price_amount" validate:"omitnil"`
 	PriceCurrency *database.Currency `json:"price_currency" validate:"omitnil,currency"`
-	Expand        *[]string          `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
+	Expand        []string           `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
 }
 
 func NewListItemsParams() ListItemsParams {
