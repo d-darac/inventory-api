@@ -1,17 +1,22 @@
 package items
 
 import (
-	"github.com/d-darac/inventory-api/internal/groups"
 	"github.com/d-darac/inventory-assets/database"
 	"github.com/google/uuid"
 )
 
-type CreateInventoryParams struct {
+type GroupData struct {
+	Description *string `json:"description" validate:"omitnil"`
+	Name        string  `json:"name" validate:"required"`
+	ParentGroup *string `json:"parent_group" validate:"omitnil,uuid"`
+}
+
+type InventoryData struct {
 	InStock   int32  `json:"in_stock" validate:"required"`
 	Orderable *int32 `json:"orderable" validate:"omitnil"`
 }
 
-type CreateItemIdentifiersParams struct {
+type IdentifiersData struct {
 	Ean  *string `json:"ean" validate:"omitnil"`
 	Gtin *string `json:"gtin" validate:"omitnil"`
 	Isbn *string `json:"isbn" validate:"omitnil"`
@@ -24,17 +29,17 @@ type CreateItemIdentifiersParams struct {
 }
 
 type CreateItemParams struct {
-	Description     *string                      `json:"description" validate:"omitnil"`
-	Group           *string                      `json:"group" validate:"omitnil,uuid,excluded_with=GroupData"`
-	GroupData       *groups.CreateGroupParams    `json:"group_data" validate:"omitnil"`
-	IdentifiersData *CreateItemIdentifiersParams `json:"identifiers_data" validate:"omitnil"`
-	Inventory       *string                      `json:"inventory" validate:"omitnil,uuid,excluded_with=InventoryData"`
-	InventoryData   *CreateInventoryParams       `json:"inventory_data" valdiate:"omitnil"`
-	Name            string                       `json:"name" validate:"required"`
-	PriceAmount     *int32                       `json:"price_amount" validate:"omitnil"`
-	PriceCurrency   *database.Currency           `json:"price_currency" validate:"omitnil,currency"`
-	Type            database.ItemType            `json:"type" validate:"required,itemtype"`
-	Expand          []string                     `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
+	Description     *string            `json:"description" validate:"omitnil"`
+	Group           *string            `json:"group" validate:"omitnil,uuid,excluded_with=GroupData"`
+	GroupData       *GroupData         `json:"group_data" validate:"omitnil"`
+	IdentifiersData *IdentifiersData   `json:"identifiers_data" validate:"omitnil"`
+	Inventory       *string            `json:"inventory" validate:"omitnil,uuid,excluded_with=InventoryData"`
+	InventoryData   *InventoryData     `json:"inventory_data" valdiate:"omitnil"`
+	Name            string             `json:"name" validate:"required"`
+	PriceAmount     *int32             `json:"price_amount" validate:"omitnil"`
+	PriceCurrency   *database.Currency `json:"price_currency" validate:"omitnil,currency"`
+	Type            database.ItemType  `json:"type" validate:"required,itemtype"`
+	Expand          []string           `json:"expand" validate:"omitnil,dive,oneof=group identifiers inventory"`
 }
 
 type ListItemsByIdsParams struct {
