@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (h *GroupsHandler) ExpandFieldsList(fields *[]string, groups []*groups.Group, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "parent_group") {
+func (h *GroupsHandler) ExpandFieldsList(fields []string, groups []*groups.Group, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(fields, "parent_group") {
 		err := h.expandGroups(groups, accountId)
 		if err != nil {
 			return err
@@ -21,8 +21,8 @@ func (h *GroupsHandler) ExpandFieldsList(fields *[]string, groups []*groups.Grou
 	return nil
 }
 
-func (h *GroupsHandler) ExpandFields(fields *[]string, group *groups.Group, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "parent_group") {
+func (h *GroupsHandler) ExpandFields(fields []string, group *groups.Group, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(fields, "parent_group") {
 		getParams := groups.Get{
 			AccountId:     accountId,
 			GroupId:       group.ParentGroup.ID.UUID,
@@ -71,8 +71,8 @@ func (h *GroupsHandler) expandGroups(grps []*groups.Group, accountId uuid.UUID) 
 	return nil
 }
 
-func (h *ItemIdentifiersHandler) ExpandFieldsList(fields *[]string, itemIdentifiers []*itemidentifiers.ItemIdentifiers, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "item") {
+func (h *ItemIdentifiersHandler) ExpandFieldsList(fields []string, itemIdentifiers []*itemidentifiers.ItemIdentifiers, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(fields, "item") {
 		err := h.expandItems(itemIdentifiers, accountId)
 		if err != nil {
 			return err
@@ -81,8 +81,8 @@ func (h *ItemIdentifiersHandler) ExpandFieldsList(fields *[]string, itemIdentifi
 	return nil
 }
 
-func (h *ItemIdentifiersHandler) ExpandFields(fields *[]string, itemIdentifiers *itemidentifiers.ItemIdentifiers, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "item") {
+func (h *ItemIdentifiersHandler) ExpandFields(fields []string, itemIdentifiers *itemidentifiers.ItemIdentifiers, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(fields, "item") {
 		getParams := items.Get{
 			AccountId:     accountId,
 			ItemId:        itemIdentifiers.Item.ID.UUID,
@@ -131,20 +131,20 @@ func (h *ItemIdentifiersHandler) expandItems(idtfs []*itemidentifiers.ItemIdenti
 	return nil
 }
 
-func (h *ItemsHandler) ExpandFieldsList(fields *[]string, items []*items.Item, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "group") {
+func (h *ItemsHandler) ExpandFieldsList(fields []string, items []*items.Item, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(fields, "group") {
 		err := h.expandGroups(items, accountId)
 		if err != nil {
 			return err
 		}
 	}
-	if fields != nil && slices.Contains(*fields, "inventory") {
+	if fields != nil && slices.Contains(fields, "inventory") {
 		err := h.expandInventories(items, accountId)
 		if err != nil {
 			return err
 		}
 	}
-	if fields != nil && slices.Contains(*fields, "identifiers") {
+	if fields != nil && slices.Contains(fields, "identifiers") {
 		err := h.expandIdentifiers(items, accountId)
 		if err != nil {
 			return err
@@ -153,8 +153,8 @@ func (h *ItemsHandler) ExpandFieldsList(fields *[]string, items []*items.Item, a
 	return nil
 }
 
-func (h *ItemsHandler) ExpandFields(fields *[]string, item *items.Item, accountId uuid.UUID) error {
-	if fields != nil && slices.Contains(*fields, "group") {
+func (h *ItemsHandler) ExpandFields(fields []string, item *items.Item, accountId uuid.UUID) error {
+	if fields != nil && slices.Contains(fields, "group") {
 		getParams := groups.Get{
 			AccountId:     accountId,
 			GroupId:       item.Group.ID.UUID,
@@ -165,7 +165,7 @@ func (h *ItemsHandler) ExpandFields(fields *[]string, item *items.Item, accountI
 			return err
 		}
 	}
-	if fields != nil && slices.Contains(*fields, "inventory") {
+	if fields != nil && slices.Contains(fields, "inventory") {
 		getParams := inventories.Get{
 			AccountId:     accountId,
 			InventoryId:   item.Inventory.ID.UUID,
@@ -176,7 +176,7 @@ func (h *ItemsHandler) ExpandFields(fields *[]string, item *items.Item, accountI
 			return err
 		}
 	}
-	if fields != nil && slices.Contains(*fields, "identifiers") {
+	if fields != nil && slices.Contains(fields, "identifiers") {
 		getParams := itemidentifiers.Get{
 			AccountId:         accountId,
 			ItemIdentifiersId: item.Identifiers.ID.UUID,
